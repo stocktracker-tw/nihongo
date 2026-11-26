@@ -2,6 +2,8 @@
 
 純 HTML / CSS / JavaScript 的日語學習網頁 App，不需要後端、不需要建置，直接放上 **GitHub Pages** 就能用，也可以安裝成手機 App（PWA）離線使用。
 
+線上版：https://stocktracker-tw.github.io/nihongo/
+
 ## 學 Duolingo，但不情勒
 
 學習方式照 Duolingo：**單元 → 課**的學習路徑、每課 3 分鐘左右、多種題型混合、單元指南。
@@ -45,13 +47,13 @@
 ```powershell
 git init
 git add .
-git commit -m "Nihongo Dojo"
+git commit -m "Nihongo"
 git branch -M main
-git remote add origin https://github.com/<你的帳號>/nihongo-dojo.git
+git remote add origin https://github.com/<你的帳號>/nihongo.git
 git push -u origin main
 ```
 
-到 repo 的 **Settings → Pages**，Source 選 `main` 分支、`/ (root)`，幾分鐘後網址就是 `https://<你的帳號>.github.io/nihongo-dojo/`。
+到 repo 的 **Settings → Pages**，Source 選 `main` 分支、`/ (root)`，幾分鐘後網址就是 `https://<你的帳號>.github.io/nihongo/`。
 
 ## 本機執行
 
