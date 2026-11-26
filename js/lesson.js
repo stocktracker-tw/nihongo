@@ -33,30 +33,15 @@ function nextNode() {
 }
 function wordDetail(w) { return `${w.word !== w.reading ? esc(w.word) + '（' + esc(w.reading) + '）' : esc(w.word)}　${esc(w.zh)}`; }
 
-// ===== 吉祥物：クロ（溫和的小烏鴉）=====
+// ===== 吉祥物：クロ（長得兇，但不會兇你）=====
 function mascot(size = 96, mood = 'calm') {
-  const eyes = mood === 'happy'
-    ? `<path d="M37 64 Q45 55 53 64" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round"/><path d="M67 64 Q75 55 83 64" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round"/>`
-    : `<circle cx="45" cy="62" r="11" fill="#fff"/><circle cx="75" cy="62" r="11" fill="#fff"/>
-       <circle cx="46" cy="64" r="5.5" fill="#15161c"/><circle cx="76" cy="64" r="5.5" fill="#15161c"/>
-       <circle cx="48.5" cy="61" r="2" fill="#fff"/><circle cx="78.5" cy="61" r="2" fill="#fff"/>`;
-  return `<svg class="mascot" width="${size}" height="${size}" viewBox="0 0 120 120" role="img" aria-label="吉祥物クロ">
-    <path d="M54 32 C51 16 63 9 72 14 C65 16 62 22 65 30 Z" fill="#2c3040"/>
-    <ellipse cx="23" cy="80" rx="10" ry="18" fill="#22252f" transform="rotate(22 23 80)"/>
-    <ellipse cx="97" cy="80" rx="10" ry="18" fill="#22252f" transform="rotate(-22 97 80)"/>
-    <ellipse cx="60" cy="70" rx="42" ry="40" fill="#2c3040"/>
-    <ellipse cx="60" cy="89" rx="24" ry="17" fill="#3d4358"/>
-    ${eyes}
-    <ellipse cx="33" cy="77" rx="6.5" ry="3.5" fill="#f29b9b" opacity=".75"/><ellipse cx="87" cy="77" rx="6.5" ry="3.5" fill="#f29b9b" opacity=".75"/>
-    <path d="M53 71 Q60 67 67 71 L60 81 Z" fill="#f2b544"/>
-    <g stroke="#f2b544" stroke-width="3" stroke-linecap="round"><path d="M50 108 l-4 7 M50 108 v8 M50 108 l4 7"/><path d="M70 108 l-4 7 M70 108 v8 M70 108 l4 7"/></g>
-  </svg>`;
+  return `<img class="mascot ${mood === 'happy' ? 'hop' : ''}" src="img/kuro.webp" width="${size}" height="${size}" alt="吉祥物クロ">`;
 }
 function greeting() {
   const days = Object.keys(state.history).filter(d => state.history[d] > 0).sort();
   const last = days[days.length - 1];
   const xpToday = state.xpDay[today()] || 0;
-  if (!last) return '嗨，我是クロ！從五十音開始，一次一小課就好，大約 3 分鐘。';
+  if (!last) return '我是クロ。長得兇，但不會兇你。從五十音開始，一次一小課就好，大約 3 分鐘。';
   if (last === today()) {
     if (S().goal && xpToday >= S().goal) return '今天的小目標達成了 🎉 接下來想學就學，想休息就休息。';
     return `今天已經累積 ${xpToday} XP 了，做得很好。`;
