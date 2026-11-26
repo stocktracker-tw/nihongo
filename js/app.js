@@ -24,26 +24,31 @@ let state = load();
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY));
-    if (s) return { srs: {}, kana: {}, xp: 0, xpDay: {}, history: {}, streak: 0, lastDay: null, newDay: { date: '', count: 0 }, ...s, settings: { ...DEFAULT_SETTINGS, ...(s.settings || {}) } };
+    if (s) return { ...blank(), ...s, settings: { ...DEFAULT_SETTINGS, ...(s.settings || {}) } };
   } catch (e) { /* ignore */ }
-  return { srs: {}, kana: {}, xp: 0, xpDay: {}, history: {}, streak: 0, lastDay: null, newDay: { date: '', count: 0 }, settings: { ...DEFAULT_SETTINGS } };
+  return blank();
+}
+function blank() {
+  return { srs: {}, kana: {}, lessons: {}, xp: 0, xpDay: {}, history: {}, newDay: { date: '', count: 0 }, settings: { ...DEFAULT_SETTINGS } };
 }
 function save() { localStorage.setItem(KEY, JSON.stringify(state)); renderMini(); }
 const S = () => state.settings;
 
-function addXP(n, reviewed = true) {
+// 不做連續天數（streak）：只記錄「累積學習天數」與「本週學了幾天」，休息不會歸零。
+function addXP(n, reviewed = 1) {
   const t = today();
-  if (state.lastDay !== t) {
-    state.streak = state.lastDay === yesterday() ? state.streak + 1 : 1;
-    state.lastDay = t;
-  }
   state.xp += n;
   state.xpDay[t] = (state.xpDay[t] || 0) + n;
-  if (reviewed) state.history[t] = (state.history[t] || 0) + 1;
+  state.history[t] = (state.history[t] || 0) + (+reviewed);
   save();
 }
-function currentStreak() {
-  return state.lastDay === today() || state.lastDay === yesterday() ? state.streak : 0;
+function totalDays() { return Object.keys(state.history).filter(d => state.history[d] > 0).length; }
+function weekDays() {
+  const now = new Date(); const dow = (now.getDay() + 6) % 7; // 週一為第一天
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now); d.setDate(now.getDate() - dow + i);
+    return { label: '一二三四五六日'[i], active: (state.history[dateStr(d)] || 0) > 0, today: i === dow };
+  });
 }
 function newCountToday() { return state.newDay.date === today() ? state.newDay.count : 0; }
 
@@ -95,6 +100,7 @@ function dueIds() {
 const ITEMS = {};
 VOCAB.forEach(v => ITEMS[v.id] = { ...v, kind: 'v' });
 GRAMMAR.forEach(g => ITEMS[g.id] = { ...g, kind: 'g' });
+registerCourseItems();
 
 // ===== 羅馬拼音 → 假名（WaniKani 式即時轉換）=====
 const ROMA = {};
@@ -191,23 +197,25 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme
 
 function renderMini() {
   const el = $('#miniStats');
-  if (el) el.innerHTML = `<span>🔥 ${currentStreak()}</span><span>⭐ ${state.xp}</span><span>📚 ${dueIds().length}</span>`;
+  if (el) el.innerHTML = `<span title="累積學習天數">📅 ${totalDays()}</span><span title="總 XP">⭐ ${state.xp}</span><span title="待複習">📚 ${dueIds().length}</span>`;
 }
 
 // ===== 路由 =====
-const routes = { home: viewHome, kana: viewKana, vocab: viewVocab, grammar: viewGrammar, challenge: viewChallenge, settings: viewSettings, study: viewStudy, kanaquiz: viewKanaQuiz };
+const routes = { home: viewPath, lesson: viewLesson, guide: viewGuide, kana: viewKana, vocab: viewVocab, grammar: viewGrammar, challenge: viewChallenge, settings: viewSettings, study: viewStudy, kanaquiz: viewKanaQuiz };
 function route() {
   keyHandler = null;
+  gentleRetry = false;
   if ('speechSynthesis' in window) speechSynthesis.cancel();
   const [name, q] = location.hash.replace(/^#\//, '').split('?');
   const r = routes[name] ? name : 'home';
-  $$('#nav a').forEach(a => a.classList.toggle('active', a.dataset.r === r || (r === 'study' && a.dataset.r === 'home') || (r === 'kanaquiz' && a.dataset.r === 'kana')));
+  $$('#nav a').forEach(a => a.classList.toggle('active', a.dataset.r === r || (['study', 'lesson', 'guide'].includes(r) && a.dataset.r === 'home') || (r === 'kanaquiz' && a.dataset.r === 'kana')));
   view.innerHTML = '';
   view.className = 'fade-in';
   routes[r](new URLSearchParams(q || ''));
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', route);
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
 // =====================================================================
 // 首頁
@@ -228,66 +236,6 @@ function kanaPct(type) {
   return Math.round(l.reduce((a, [k]) => a + kanaMastery(k), 0) / (l.length * 2) * 100);
 }
 
-function viewHome() {
-  const due = dueIds().length;
-  const newLeft = Math.max(0, S().newPerDay - newCountToday());
-  const newAvail = Math.min(newLeft, VOCAB.filter(v => !state.srs[v.id]).length);
-  const xpToday = state.xpDay[today()] || 0;
-  const pct = Math.min(1, xpToday / S().goal);
-  const learnedV = VOCAB.filter(v => state.srs[v.id]).length;
-  const learnedG = GRAMMAR.filter(g => state.srs[g.id]).length;
-  const hp = kanaPct('hira'), kp = kanaPct('kata');
-  const hour = new Date().getHours();
-  const greet = hour < 11 ? 'おはよう' : hour < 18 ? 'こんにちは' : 'こんばんは';
-  const nextDue = Object.values(state.srs).map(s => s.due).filter(d => d > Date.now()).sort((a, b) => a - b)[0];
-  const nextTxt = nextDue ? fmtUntil(nextDue) : '';
-  const C = 2 * Math.PI * 52;
-
-  view.innerHTML = `
-    <h1 class="jp">${greet}！</h1>
-    <p class="sub">${new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'long' })}　<span class="streak">🔥 <b>${currentStreak()}</b> 天連續學習</span></p>
-
-    <div class="card hero">
-      <div class="ring">
-        <svg width="120" height="120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--line)" stroke-width="10"/>
-        <circle cx="60" cy="60" r="52" fill="none" stroke="var(--good)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct)}"/></svg>
-        <div class="center"><div><b>${xpToday}</b><div class="small muted">/ ${S().goal} XP</div></div></div>
-      </div>
-      <div>
-        <div style="font-size:20px;font-weight:700">${due + newAvail > 0 ? '今日學習' : '今天的份量完成了 🎉'}</div>
-        <p class="muted" style="margin:4px 0 14px">${due} 個待複習 · ${newAvail} 個新單字${due + newAvail === 0 && nextTxt ? `<br>下次複習：${nextTxt}` : ''}</p>
-        <div class="row">
-          ${due + newAvail > 0 ? `<a class="btn primary big" href="#/study">開始學習</a>` : `<a class="btn primary" href="#/study?extra=1">再學 5 個新單字</a>`}
-          <a class="btn" href="#/challenge">⚡ 快速挑戰</a>
-        </div>
-      </div>
-    </div>
-
-    <h2>學習進度</h2>
-    <div class="grid grid-4">
-      <div class="card stat"><span class="num">${hp}%</span><span class="lbl">平假名掌握</span><div class="bar"><i style="width:${hp}%"></i></div></div>
-      <div class="card stat"><span class="num">${kp}%</span><span class="lbl">片假名掌握</span><div class="bar"><i style="width:${kp}%"></i></div></div>
-      <div class="card stat"><span class="num">${learnedV}<small class="muted" style="font-size:14px"> / ${VOCAB.length}</small></span><span class="lbl">N5 單字</span><div class="bar"><i style="width:${learnedV / VOCAB.length * 100}%"></i></div></div>
-      <div class="card stat"><span class="num">${learnedG}<small class="muted" style="font-size:14px"> / ${GRAMMAR.length}</small></span><span class="lbl">N5 文法</span><div class="bar"><i style="width:${learnedG / GRAMMAR.length * 100}%"></i></div></div>
-    </div>
-
-    <h2>學習足跡 <span class="muted small" style="font-weight:400">· 總計 ${state.xp} XP</span></h2>
-    <div class="card"><div class="heatmap">${heatmap()}</div><div class="small muted" style="margin-top:8px">每格一天，顏色越深代表當天完成越多題目</div></div>
-
-    <h2>建議學習路徑</h2>
-    <div class="path">
-      ${pathStep('あ', '平假名', '五十音基礎 · 口訣 · 手寫', hp, '#/kana')}
-      ${pathStep('ア', '片假名', '外來語必備', kp, '#/kana?t=kata')}
-      ${pathStep('語', 'N5 單字', '間隔重複，每天少量累積', Math.round(learnedV / VOCAB.length * 100), '#/study')}
-      ${pathStep('文', 'N5 文法', '讀懂句型，再用填空鞏固', Math.round(learnedG / GRAMMAR.length * 100), '#/grammar')}
-      ${pathStep('戦', '綜合挑戰', '三顆愛心，聽力 · 造句 · 單字', null, '#/challenge')}
-    </div>`;
-}
-function pathStep(ico, title, desc, pct, href) {
-  return `<a class="path-step" href="${href}"><span class="dot ${pct >= 100 ? 'done' : ''}">${pct >= 100 ? '✓' : ico}</span>
-    <span class="grow"><b>${title}</b><br><span class="small muted">${desc}</span></span>
-    ${pct === null ? '<span class="muted">→</span>' : `<span class="small muted">${pct}%</span>`}</a>`;
-}
 function fmtUntil(t) {
   const m = Math.round((t - Date.now()) / 60000);
   if (m < 60) return `${m} 分鐘後`;
@@ -440,16 +388,18 @@ function sessionShell(progress, hearts, exitHref) {
       <div class="session-top">
         <a class="icon-btn" href="${exitHref}" title="離開" style="text-decoration:none">✕</a>
         <div class="bar"><i style="width:${Math.round(progress * 100)}%"></i></div>
-        ${hearts !== null ? `<span class="hearts">${'❤'.repeat(hearts)}<span style="opacity:.2">${'❤'.repeat(3 - hearts)}</span></span>` : ''}
       </div>
       <div id="stage" class="fade-in"></div>
     </div>`;
   return $('#stage');
 }
+let gentleRetry = false;
 function feedback(stage, ok, detail, say, onContinue, extraHTML = '') {
   const f = document.createElement('div');
   f.className = 'feedback ' + (ok ? 'ok' : 'no');
-  f.innerHTML = `<div>${ok ? '✓ 正確！' : '✗ 再接再厲'}${detail ? `<div class="detail-txt jp">${detail}</div>` : ''}</div>
+  const head = ok ? pick(['✓ 正確！', '✓ 很好！', '✓ 答對了']) : '差一點點，正確答案是：';
+  const note = !ok && gentleRetry ? '<div class="detail-txt">沒關係，這題等一下會再出現一次。</div>' : '';
+  f.innerHTML = `<div>${head}${detail ? `<div class="detail-txt jp">${detail}</div>` : ''}${note}</div>
     <div class="row">${say ? audioBtn(say) : ''}<button class="btn ${ok ? 'primary' : ''}" id="cont">繼續<span class="kbd">Enter</span></button></div>`;
   stage.appendChild(f);
   if (extraHTML) f.insertAdjacentHTML('afterend', extraHTML);
@@ -462,7 +412,7 @@ function feedback(stage, ok, detail, say, onContinue, extraHTML = '') {
 function askChoice(stage, q, onResult, onContinue) {
   stage.innerHTML = `
     <div class="card prompt-card"><div class="prompt-label">${q.label}</div>${q.prompt}</div>
-    <div class="choices">${q.options.map((o, i) => `<button class="choice ${q.jp ? 'jp' : ''}" data-i="${i}">${esc(o)}<span class="kbd">${i + 1}</span></button>`).join('')}</div>`;
+    <div class="choices ${q.cls || ''}">${q.options.map((o, i) => `<button class="choice ${q.jp ? 'jp' : ''}" data-i="${i}">${typeof o === 'object' ? o.html : esc(o)}<span class="kbd">${i + 1}</span></button>`).join('')}</div>`;
   if (q.autoSay) setTimeout(() => speak(q.autoSay), 150);
   let done = false;
   const choose = i => {
@@ -500,19 +450,20 @@ function askType(stage, q, onResult, onContinue) {
 }
 function askTiles(stage, q, onResult, onContinue) {
   const tiles = shuffle(q.tiles.map((t, i) => ({ t, i })));
+  if (q.autoSay) setTimeout(() => speak(q.autoSay), 150);
   let answer = [];
   stage.innerHTML = `
-    <div class="card prompt-card"><div class="prompt-label">${q.label}</div><div class="prompt-meaning">${esc(q.zh)}</div></div>
+    <div class="card prompt-card"><div class="prompt-label">${q.label}</div>${q.prompt || `<div class="prompt-meaning">${esc(q.zh)}</div>`}</div>
     <div class="tiles answer" id="ansT"></div>
-    <div class="tiles" id="bank">${tiles.map((x, j) => `<button class="tile" data-j="${j}">${esc(x.t)}</button>`).join('')}</div>
+    <div class="tiles" id="bank">${tiles.map((x, j) => `<button class="tile ${q.zhTiles ? 'zh' : ''}" data-j="${j}">${esc(x.t)}</button>`).join('')}</div>
     <button class="btn primary block" id="check">檢查<span class="kbd">Enter</span></button>`;
   const ansEl = $('#ansT', stage);
   const draw = () => {
-    ansEl.innerHTML = answer.map((j, p) => `<button class="tile" data-p="${p}">${esc(tiles[j].t)}</button>`).join('');
+    ansEl.innerHTML = answer.map((j, p) => `<button class="tile ${q.zhTiles ? 'zh' : ''}" data-p="${p}">${esc(tiles[j].t)}</button>`).join('');
     $$('#bank .tile', stage).forEach(b => b.classList.toggle('used', answer.includes(+b.dataset.j)));
     $$('.tile', ansEl).forEach(b => b.onclick = () => { if (!done) { answer.splice(+b.dataset.p, 1); draw(); } });
   };
-  $$('#bank .tile', stage).forEach(b => b.onclick = () => { if (!done && !answer.includes(+b.dataset.j)) { answer.push(+b.dataset.j); speak(tiles[+b.dataset.j].t); draw(); } });
+  $$('#bank .tile', stage).forEach(b => b.onclick = () => { if (!done && !answer.includes(+b.dataset.j)) { answer.push(+b.dataset.j); if (!q.zhTiles) speak(tiles[+b.dataset.j].t); draw(); } });
   let done = false;
   const check = () => {
     if (done || !answer.length) return;
@@ -520,7 +471,7 @@ function askTiles(stage, q, onResult, onContinue) {
     const ok = answer.map(j => tiles[j].t).join('') === q.correct.join('');
     $('#check', stage).remove();
     onResult(ok);
-    feedback(stage, ok, q.correct.join(''), q.correct.join(''), onContinue);
+    feedback(stage, ok, q.detail ?? esc(q.correct.join('')), q.say ?? q.correct.join(''), onContinue);
   };
   $('#check', stage).onclick = check;
   keyHandler = e => { if (e.key === 'Enter') { e.preventDefault(); check(); } };
@@ -535,7 +486,7 @@ function showResult({ title, correct, total, xp, again, back }) {
       <div class="grid grid-4" style="margin:24px 0">
         <div class="stat"><span class="big">${acc}%</span><span class="lbl">正確率</span></div>
         <div class="stat"><span class="big">+${xp}</span><span class="lbl">XP</span></div>
-        <div class="stat"><span class="big">🔥${currentStreak()}</span><span class="lbl">連續天數</span></div>
+        <div class="stat"><span class="big">📅${totalDays()}</span><span class="lbl">累積學習天數</span></div>
       </div>
       <div class="row" style="justify-content:center">
         ${again ? `<button class="btn" id="again">再來一次</button>` : ''}
@@ -557,12 +508,12 @@ function distractVocab(v, field, n = 3) {
   return out;
 }
 function viewStudy(q) {
-  const extra = q.get('extra');
-  const due = shuffle(dueIds());
-  const newLimit = extra ? 5 : Math.max(0, S().newPerDay - newCountToday());
+  // 預設只複習到期的項目；從單字庫學新字要主動選（?new=1）
+  const due = shuffle(dueIds()).slice(0, 50);
+  const newLimit = q.get('new') ? S().newPerDay : 0;
   const fresh = VOCAB.filter(v => !state.srs[v.id]).slice(0, newLimit).map(v => v.id);
   if (!due.length && !fresh.length) {
-    view.innerHTML = `<div class="session"><div class="card result"><div class="emoji">🌸</div><h1>目前沒有要複習的項目</h1><p class="muted">全部 N5 單字都學過了，或者到文法頁加入新文法吧！</p><a class="btn primary" href="#/home">回首頁</a></div></div>`;
+    view.innerHTML = `<div class="session"><div class="card result">${mascot(110)}<h1>現在沒有要複習的東西</h1><p class="muted">學過的單字會在快忘記的時候回來找你。<br>去學一課新的，或者單純休息也很好。</p><a class="btn primary" href="#/home">回課程</a></div></div>`;
     return;
   }
   // 新卡分散插入複習中
@@ -659,7 +610,7 @@ function viewVocab() {
   const cats = [...new Set(VOCAB.map(v => v.cat))];
   let cat = '全部', query = '';
   view.innerHTML = `
-    <div class="row between"><div><h1>N5 單字</h1><p class="sub">${VOCAB.length} 個單字 · 點擊任一列可聽發音。學習請按「開始學習」。</p></div><a class="btn primary" href="#/study">開始學習</a></div>
+    <div class="row between"><div><h1>N5 單字</h1><p class="sub">${VOCAB.length} 個單字 · 點擊任一列可聽發音。課程以外想多學，可以從這裡一次學 ${S().newPerDay} 個。</p></div><a class="btn primary" href="#/study?new=1">學 ${S().newPerDay} 個新單字</a></div>
     <input class="answer-input" id="search" placeholder="搜尋：漢字、假名、中文或羅馬拼音" style="font-size:16px;text-align:left;margin:0 0 12px">
     <div class="row" id="cats">${['全部', ...cats].map(c => `<button class="chip ${c === '全部' ? 'on' : ''}" data-c="${c}">${c}</button>`).join('')}</div>
     <div class="card" style="margin-top:14px;padding:6px 16px;overflow-x:auto"><table class="vocab-table"><thead><tr><th>單字</th><th>讀音</th><th>中文</th><th>等級</th></tr></thead><tbody id="vt"></tbody></table></div>`;
@@ -710,10 +661,10 @@ function viewGrammar(q) {
 }
 
 // =====================================================================
-// 快速挑戰（Duolingo 式：3 顆愛心、混合題型）
+// 自由練習：混合題型，沒有愛心、沒有懲罰，答錯只是再練一次
 // =====================================================================
 function viewChallenge() {
-  const learned = VOCAB.filter(v => state.srs[v.id]);
+  const learned = Object.keys(state.srs).map(id => ITEMS[id]).filter(x => x && x.kind === 'v');
   const pool = learned.length >= 8 ? learned : VOCAB.slice(0, 60);
   const gPool = GRAMMAR.filter(g => state.srs[g.id]);
   const builders = [
@@ -724,16 +675,14 @@ function viewChallenge() {
     () => { const g = pick(gPool.length ? gPool : GRAMMAR.slice(0, 8)); return (st, r, n) => askCloze(st, g, r, n); },
   ];
   const qs = Array.from({ length: 10 }, (_, i) => builders[i % builders.length]()).sort(() => Math.random() - .5);
-  let idx = 0, hearts = 3, correct = 0, xp = 0, combo = 0;
+  let idx = 0, correct = 0, xp = 0, combo = 0;
   const step = () => {
-    if (hearts <= 0) return showResult({ title: '愛心用完了！', correct, total: idx, xp, again: '#/challenge', back: '#/home' });
-    if (idx >= qs.length) return showResult({ title: hearts === 3 ? '完美通關！' : '挑戰完成！', correct, total: qs.length, xp, again: '#/challenge', back: '#/home' });
-    const stage = sessionShell(idx / qs.length, hearts, '#/home');
-    if (combo >= 3) stage.insertAdjacentHTML('beforebegin', `<div class="tag" style="margin-bottom:10px">🔥 ${combo} 連擊！</div>`);
+    if (idx >= qs.length) return showResult({ title: '練習完成！', correct, total: qs.length, xp, again: '#/challenge', back: '#/home' });
+    const stage = sessionShell(idx / qs.length, null, '#/home');
+    if (combo >= 3) stage.insertAdjacentHTML('beforebegin', `<div class="tag" style="margin-bottom:10px">✨ 連續答對 ${combo} 題</div>`);
     qs[idx](stage, ok => {
-      if (ok) { combo++; const g = 10 + Math.min(combo, 5); correct++; xp += g; addXP(g); }
-      else { combo = 0; hearts--; addXP(0); }
-      const h = $('.hearts'); if (h) h.innerHTML = `${'❤'.repeat(hearts)}<span style="opacity:.2">${'❤'.repeat(3 - hearts)}</span>`;
+      if (ok) { combo++; const g = 5 + Math.min(combo, 5); correct++; xp += g; addXP(g); }
+      else { combo = 0; addXP(1); xp += 1; }
     }, () => { idx++; step(); });
   };
   step();
@@ -748,8 +697,8 @@ function viewSettings() {
   view.innerHTML = `
     <h1>設定</h1><p class="sub">所有資料只存在你的瀏覽器（localStorage），不會上傳。</p>
     <div class="card">
-      <div class="field"><b>每日 XP 目標</b><select data-k="goal">${[20, 50, 100, 200].map(n => `<option ${n === s.goal ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
-      <div class="field"><div><b>每日新單字數</b><div class="small muted">建議 5–15，複習量會隨之增加</div></div><input type="number" min="0" max="50" data-k="newPerDay" value="${s.newPerDay}" style="width:80px"></div>
+      <div class="field"><div><b>每日小目標</b><div class="small muted">只是參考，沒達成也不會怎樣</div></div><select data-k="goal">${[[0, '不設目標'], [20, '20 XP（輕鬆）'], [50, '50 XP（一般）'], [100, '100 XP（認真）']].map(([n, l]) => `<option value="${n}" ${n === s.goal ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+      <div class="field"><div><b>單字庫一次學幾個</b><div class="small muted">單字頁「學新單字」用，建議 5–15</div></div><input type="number" min="0" max="50" data-k="newPerDay" value="${s.newPerDay}" style="width:80px"></div>
       <div class="field"><b>外觀</b><select data-k="theme">${[['auto', '跟隨系統'], ['light', '淺色'], ['dark', '深色']].map(([v, l]) => `<option value="${v}" ${v === s.theme ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
       ${sw('furigana', '顯示振假名', '漢字上方標示讀音')}
       ${sw('autoplay', '自動播放發音', '作答後自動朗讀')}

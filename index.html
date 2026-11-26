@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>日語道場 Nihongo Dojo</title>
-  <meta name="description" content="免費、離線可用的日語學習網頁 App：五十音、N5 單字間隔重複、文法、聽力與造句挑戰。">
+  <meta name="description" content="免費、離線可用的日語學習網頁 App：Duolingo 式課程、五十音、N5 單字間隔重複、文法與聽力練習。不情勒、不鎖課。">
   <meta name="theme-color" content="#c8423b">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -18,11 +18,11 @@
   <div class="app">
     <nav class="nav" id="nav">
       <div class="brand"><span class="brand-mark">日</span> 日語道場</div>
-      <a href="#/home" data-r="home"><span class="ico">家</span>首頁</a>
+      <a href="#/home" data-r="home"><span class="ico">道</span>學習</a>
       <a href="#/kana" data-r="kana"><span class="ico">あ</span>五十音</a>
       <a href="#/vocab" data-r="vocab"><span class="ico">語</span>單字</a>
       <a href="#/grammar" data-r="grammar"><span class="ico">文</span>文法</a>
-      <a href="#/challenge" data-r="challenge"><span class="ico">戦</span>挑戰</a>
+      <a href="#/challenge" data-r="challenge"><span class="ico">練</span>練習</a>
       <a href="#/settings" data-r="settings"><span class="ico">設</span>設定</a>
       <div class="spacer"></div>
       <div class="mini-stats" id="miniStats"></div>
@@ -31,6 +31,8 @@
   </div>
   <div class="toast" id="toast"></div>
   <script src="js/data.js"></script>
+  <script src="js/course.js"></script>
+  <script src="js/lesson.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
