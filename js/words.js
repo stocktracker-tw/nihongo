@@ -472,8 +472,8 @@ async function viewListen(q) {
     if (my !== token) return res();
     const h = speechHash(text);
     if (audioIndex && !audioIndex.has(h)) {
-      if (!('speechSynthesis' in window)) return res();
-      const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; u.rate = S().rate; if (jaVoice) u.voice = jaVoice;
+      if (!canSpeakDevice()) return res();   // 沒有日語語音就跳過，不用中文語音念
+      const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; u.rate = S().rate; u.voice = jaVoice;
       u.onend = u.onerror = () => res(); speechSynthesis.speak(u); return;
     }
     audio = new Audio(`audio/${h}.mp3`);

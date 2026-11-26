@@ -171,8 +171,18 @@ function stopSpeech() {
   if (curAudio) { curAudio.pause(); curAudio = null; }
   if ('speechSynthesis' in window) speechSynthesis.cancel();
 }
+// 裝置上沒有日語語音時不要念：用中文語音念日文會念錯
+function canSpeakDevice() {
+  if (!('speechSynthesis' in window)) return false;
+  if (!jaVoice) loadVoices();
+  return !!jaVoice;
+}
+let noVoiceWarned = false;
 function speakDevice(text) {
-  if (!('speechSynthesis' in window)) { toast('此瀏覽器不支援語音'); return; }
+  if (!canSpeakDevice()) {
+    if (!noVoiceWarned) { noVoiceWarned = true; toast('這句還沒有發音檔，裝置也沒有日語語音'); }
+    return;
+  }
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'ja-JP'; u.rate = S().rate;
   if (jaVoice) u.voice = jaVoice;
