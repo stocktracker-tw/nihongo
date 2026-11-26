@@ -6,7 +6,7 @@
 // =====================================================================
 
 const COURSE_WORDS = [];
-const UNIT_COLORS = ['#8c7b5f', '#6b8a5c', '#7f0019', '#a8865a', '#5f6e78', '#8f6b55', '#707d5a', '#9a7b4f', '#56636e', '#7c6a80', '#a0634a'];
+const UNIT_COLORS = ['#9a8562', '#6f8f60', '#8f1a2c', '#a8865a', '#5f7480', '#94705a', '#737f5c', '#a07f50', '#5a6a76', '#80708a', '#a5664c'];
 
 function cw(u, k) { const [w, zh, e] = u.words[k]; return { key: k, word: w, reading: k, zh, emoji: e, id: courseItemId(k) }; }
 function courseItemId(k) {
