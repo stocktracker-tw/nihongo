@@ -1,4 +1,4 @@
-# 日語道場 Nihongo Dojo
+# Nihongo
 
 純 HTML / CSS / JavaScript 的日語學習網頁 App，不需要後端、不需要建置，直接放上 **GitHub Pages** 就能用，也可以安裝成手機 App（PWA）離線使用。
 

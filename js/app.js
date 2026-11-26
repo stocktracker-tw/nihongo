@@ -1,6 +1,6 @@
 'use strict';
 // =====================================================================
-// 日語道場 — 綜合 Anki（間隔重複）、WaniKani（輸入作答、等級）、
+// Nihongo — 綜合 Anki（間隔重複）、WaniKani（輸入作答、等級）、
 // Duolingo（連續天數、XP、愛心挑戰、拼字塊造句）、Bunpro（文法填空）、
 // Tofugu（五十音口訣）與手寫練習的單檔靜態 App。
 // =====================================================================
@@ -12,13 +12,12 @@ const DAY = 86400000;
 const pad = n => String(n).padStart(2, '0');
 const dateStr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const today = () => dateStr(new Date());
-const yesterday = () => dateStr(new Date(Date.now() - DAY));
 const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const pick = a => a[Math.random() * a.length | 0];
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // ===== 狀態 =====
-const KEY = 'nihongo-dojo-v1';
+const KEY = 'nihongo-dojo-v1'; // 沿用舊 key，保留既有進度
 const DEFAULT_SETTINGS = { goal: 50, newPerDay: 10, theme: 'dark', furigana: true, autoplay: true, rate: 0.9 };
 let state = load();
 function load() {
@@ -55,7 +54,6 @@ function weekDays() {
     return { label: '一二三四五六日'[i], active: (state.history[dateStr(d)] || 0) > 0, today: i === dow };
   });
 }
-function newCountToday() { return state.newDay.date === today() ? state.newDay.count : 0; }
 
 // ===== 間隔重複（SM-2 變體，Anki 四鍵）=====
 // grade: 0 重來 / 1 困難 / 2 良好 / 3 簡單
@@ -238,29 +236,7 @@ function kanaList(type = 'hira', groups = ['basic', 'dakuten', 'yoon']) {
   groups.forEach(g => KANA_ROWS[g].forEach(row => row.forEach(c => c && out.push([type === 'kata' ? toKatakana(c[0]) : c[0], c[1]]))));
   return out;
 }
-function kanaPct(type) {
-  const l = kanaList(type);
-  return Math.round(l.reduce((a, [k]) => a + kanaMastery(k), 0) / (l.length * 2) * 100);
-}
 
-function fmtUntil(t) {
-  const m = Math.round((t - Date.now()) / 60000);
-  if (m < 60) return `${m} 分鐘後`;
-  if (m < 1440) return `${Math.round(m / 60)} 小時後`;
-  return `${Math.round(m / 1440)} 天後`;
-}
-function heatmap() {
-  const weeks = 22, cells = [];
-  const end = new Date(); end.setHours(0, 0, 0, 0);
-  const start = new Date(end);
-  start.setDate(end.getDate() - (weeks - 1) * 7 - end.getDay());
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const n = state.history[dateStr(d)] || 0;
-    const l = n === 0 ? 0 : n < 10 ? 1 : n < 25 ? 2 : n < 50 ? 3 : 4;
-    cells.push(`<i data-l="${l}" title="${dateStr(d)}：${n} 題"></i>`);
-  }
-  return cells.join('');
-}
 
 // =====================================================================
 // 五十音
@@ -728,7 +704,7 @@ function viewSettings() {
   $('#exp').onclick = () => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(state, null, 1)], { type: 'application/json' }));
-    a.download = `nihongo-dojo-${today()}.json`; a.click();
+    a.download = `nihongo-${today()}.json`; a.click();
   };
   $('#imp').onchange = e => {
     const f = e.target.files[0]; if (!f) return;

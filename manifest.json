@@ -1,7 +1,7 @@
 {
-  "name": "日語道場 Nihongo Dojo",
-  "short_name": "日語道場",
-  "description": "五十音、N5 單字間隔重複、文法與聽力挑戰",
+  "name": "Nihongo",
+  "short_name": "Nihongo",
+  "description": "日語學習：Duolingo 式課程、五十音、N5 單字間隔重複、文法與聽力練習",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

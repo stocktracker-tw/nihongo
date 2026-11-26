@@ -1,5 +1,5 @@
 /* =====================================================================
-   日語道場 — Liquid Glass（參考 Stock Tracker）
+   Nihongo — Liquid Glass（參考 Stock Tracker）
    霧面玻璃卡片、頂緣鏡面高光、浮動玻璃膠囊分頁列、SVG 邊緣折射
    ===================================================================== */
 :root {
@@ -27,7 +27,6 @@
   --sheen: linear-gradient(125deg, rgba(255,255,255,.55), rgba(255,255,255,0) 42%);
   --radius: 24px;
   --jp: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
-  --jp-serif: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
   --ui: "Segoe UI", "Microsoft JhengHei", "Noto Sans TC", system-ui, -apple-system, sans-serif;
 }
 [data-theme="dark"] {
@@ -87,8 +86,11 @@ a { color: var(--accent); }
 .feedback, .brandstat, .field select, .field input[type=number] {
   background: var(--glass);
   border: 1px solid var(--glass-border);
-  -webkit-backdrop-filter: blur(30px) saturate(1.15); backdrop-filter: blur(30px) saturate(1.15);
 }
+/* 只有浮在內容上方的元件需要真的模糊背後的東西 */
+.pop, .brandstat { -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6); }
+/* 深色主題的卡片是半透明，用較淡的不透明底取代模糊 */
+[data-theme="dark"] .card, [data-theme="dark"] .path-head { background: linear-gradient(180deg, rgba(34,44,62,.78), rgba(22,30,45,.82)); }
 .card, .path-head { position: relative; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
 .path-head, .result.card { border-radius: 30px; }
 .card::after, .path-head::after, .unit-banner::after, .pop::after {
@@ -274,7 +276,7 @@ a.btn, a.chip, a.icon-btn { text-decoration: none; display: inline-block; color:
   background: radial-gradient(circle at 34% 24%, rgba(255,255,255,.6), rgba(255,255,255,0) 52%), var(--c);
   box-shadow: 0 10px 24px color-mix(in srgb, var(--c) 40%, transparent), inset 0 -4px 8px rgba(0,0,0,.18), inset 0 2px 2px rgba(255,255,255,.55);
 }
-.node.current { animation: glow 2.4s ease-in-out infinite; }
+.node.current { animation: glow 2.4s ease-in-out 4; }
 @keyframes glow { 50% { box-shadow: 0 10px 24px color-mix(in srgb, var(--c) 40%, transparent), 0 0 0 10px color-mix(in srgb, var(--c) 16%, transparent), inset 0 -4px 8px rgba(0,0,0,.18), inset 0 2px 2px rgba(255,255,255,.55); } }
 .node.review:not(.done) { font-size: 30px; }
 .node-label { font-size: 12.5px; font-weight: 700; color: var(--c); padding: 3px 12px; border-radius: 999px;
