@@ -189,7 +189,7 @@ async function viewBook(q) {
     <div style="text-align:center;margin-top:14px"><button class="btn" id="more">再載入 100 個</button></div>`;
   const draw = () => {
     $('#cnt').textContent = `${list.length} 字 · ${selecting ? '點一列選取' : '點一列聽發音'}`;
-    $('#bt').innerHTML = list.slice(0, shown).map(w => wordRow(w, selecting, sel.has(w.i))).join('') || '<tr><td class="muted">這裡還沒有單字</td></tr>';
+    $('#bt').innerHTML = list.slice(0, shown).map(w => wordRow(w, selecting, sel.has(w.i))).join('') || `<tr><td class="muted" style="padding:18px 6px">${{ today: '今天還沒背單字。回首頁按「開始背詞」吧。', hard: '目前沒有難記的字。背單字時選「不認識」或「記錯了」的字會出現在這裡。', learned: '還沒有背過的字。', m: '還沒有標為已掌握的字。背單字時按「已掌握」就會出現在這裡。', l: '還沒有學習中的字。', n: '這本書的字都背過了。' }[filter] || '這裡還沒有單字'}</td></tr>`;
     $('#more').style.display = shown < list.length ? '' : 'none';
     $('#selbar').hidden = !selecting;
     $('#selN').textContent = `已選 ${sel.size}`;
@@ -254,7 +254,7 @@ async function viewWordStudy(q) {
     if (!td.ids.includes(item.w.i)) td.ids.push(item.w.i);
     state.srs[item.w.i] = nextSRS(state.srs[item.w.i], g);
     if (!seen.includes(item.w)) seen.push(item.w);
-    addXP(g >= 2 ? 2 : 1);
+    logActivity();
   };
   const again = item => { loops++; queue.splice(Math.min(queue.length, 4), 0, { ...item, retry: true }); };
   const masterIt = item => {
@@ -269,7 +269,7 @@ async function viewWordStudy(q) {
     if (!queue.length) return wrapUp();
     const item = queue[0];
     const w = item.w;
-    const stage = sessionShell(finished / total, null, '#/home');
+    const stage = sessionShell(finished / total, '#/home');
     const next = done => { keyHandler = null; queue.shift(); if (done) finished++; step(); };
     const tag = item.retry ? '<span class="tag">再看一次</span>' : item.isNew ? '<span class="tag new">新詞</span>' : '<span class="tag">複習</span>';
     stage.innerHTML = `
@@ -336,7 +336,7 @@ async function viewWordStudy(q) {
     let gi = 0;
     const play = () => {
       if (gi >= games.length) return result();
-      const st = sessionShell(1, null, '#/home');
+      const st = sessionShell(1, '#/home');
       st.insertAdjacentHTML('beforebegin', `<div class="tag" style="margin-bottom:10px">鞏固 ${gi + 1} / ${games.length}</div>`);
       games[gi](st).then(() => { gi++; play(); });
     };

@@ -37,20 +37,6 @@ function wordDetail(w) { return `${w.word !== w.reading ? esc(w.word) + '（' + 
 function mascot(size = 96, mood = 'calm') {
   return `<img class="mascot ${mood === 'happy' ? 'hop' : ''}" src="img/kuro.webp" width="${size}" height="${size}" alt="吉祥物クロ">`;
 }
-function greeting() {
-  const days = Object.keys(state.history).filter(d => state.history[d] > 0).sort();
-  const last = days[days.length - 1];
-  const xpToday = state.xpDay[today()] || 0;
-  if (!last) return '我是クロ。長得兇，但不會兇你。從五十音開始，一次一小課就好，大約 3 分鐘。';
-  if (last === today()) {
-    if (S().goal && xpToday >= S().goal) return '今天的小目標達成了 🎉 接下來想學就學，想休息就休息。';
-    return `今天已經累積 ${xpToday} XP 了，做得很好。`;
-  }
-  const gap = Math.round((new Date(today()) - new Date(last)) / DAY);
-  if (gap >= 4) return '歡迎回來！先從一小課或幾個複習開始吧，不用急。';
-  return pick(['今天想學一點點嗎？', '每天一點點，比一次很多更好記。', '答錯沒關係，答錯的題目會再練一次。', '累了就休息，進度都會幫你留著。']);
-}
-
 // =====================================================================
 // 入門課程（列表，從「發現」進入）
 // =====================================================================
@@ -131,7 +117,7 @@ function viewLesson(q) {
       return finishLesson(ui, li, replay, { correct, answered, secs: Math.round((Date.now() - t0) / 1000), words: built.words, kana: built.kana });
     }
     const cur = queue[0];
-    const stage = sessionShell(finished / total, null, '#/course');
+    const stage = sessionShell(finished / total, '#/course');
     const next = () => { keyHandler = null; queue.shift(); finished++; step(); };
     if (cur.f.teach) return cur.f(stage, next);
     cur.f(stage, ok => {
@@ -145,17 +131,13 @@ function finishLesson(ui, li, replay, r) {
   const u = COURSE[ui];
   const review = li === u.lessons.length;
   const acc = r.answered ? r.correct / r.answered : 1;
-  const xp = (replay ? 5 : 10) + Math.round(acc * 5);
-  const before = state.xpDay[today()] || 0;
   state.lessons[lkey(ui, li)] = (state.lessons[lkey(ui, li)] || 0) + 1;
   (r.words || []).forEach(w => { if (!state.srs[w.id]) schedule(w.id, 2); });
-  addXP(xp, r.answered);
-  const goalHit = S().goal && before < S().goal && before + xp >= S().goal;
+  logActivity(r.answered || 1);
   const nx = nextNode();
   const mm = Math.floor(r.secs / 60), ss = String(r.secs % 60).padStart(2, '0');
   const title = review ? '單元完成！' : replay ? '練習完成！' : '這一課完成了！';
-  const msg = goalHit ? '今天的小目標達成了 🎉 接下來隨你，想繼續或休息都很好。'
-    : acc === 1 ? '全部一次答對，太厲害了。'
+  const msg = acc === 1 ? '全部一次答對，太厲害了。'
     : acc >= 0.8 ? '很穩！答錯的部分剛剛也練過一次了。'
     : '今天也有往前一點。學過的東西會在複習時再見面。';
   keyHandler = null;
@@ -165,7 +147,7 @@ function finishLesson(ui, li, replay, r) {
       <h1>${title}</h1>
       <p class="muted">${msg}</p>
       <div class="grid grid-4" style="margin:24px 0">
-        <div class="stat"><span class="big">+${xp}</span><span class="lbl">XP</span></div>
+        <div class="stat"><span class="big">${(r.words || r.kana || []).length}</span><span class="lbl">${r.kana && r.kana.length ? '個假名' : '個單字'}</span></div>
         <div class="stat"><span class="big">${Math.round(acc * 100)}%</span><span class="lbl">一次答對</span></div>
         <div class="stat"><span class="big">${mm}:${ss}</span><span class="lbl">用時</span></div>
       </div>

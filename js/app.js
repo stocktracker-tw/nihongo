@@ -18,28 +18,26 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 
 // ===== 狀態 =====
 const KEY = 'nihongo-dojo-v1'; // 沿用舊 key，保留既有進度
-// 沒有設定頁：全部用固定值（深色無印良品、振假名、自動發音、正常語速、每日小目標 50 XP）
-const SETTINGS = Object.freeze({ goal: 50, newPerDay: 10, furigana: true, autoplay: true, rate: 0.9 });
+// 沒有設定頁：全部用固定值（深色無印良品、振假名、自動發音、正常語速）
+const SETTINGS = Object.freeze({ newPerDay: 10, furigana: true, autoplay: true, rate: 0.9 });
 let state = load();
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY));
-    if (s) { const st = { ...blank(), ...s }; delete st.settings; return st; }
+    if (s) { const st = { ...blank(), ...s }; delete st.settings; delete st.xp; delete st.xpDay; delete st.newDay; return st; }  // 舊版欄位不再使用
   } catch (e) { /* ignore */ }
   return blank();
 }
 function blank() {
-  return { srs: {}, kana: {}, lessons: {}, xp: 0, xpDay: {}, history: {}, newDay: { date: '', count: 0 }, book: 'n5', dailyNew: 10, mastered: {}, wdone: null };
+  return { srs: {}, kana: {}, lessons: {}, history: {}, book: 'n5', dailyNew: 10, mastered: {}, wdone: null };
 }
 function save() { localStorage.setItem(KEY, JSON.stringify(state)); renderMini(); }
 const S = () => SETTINGS;
 
-// 不做連續天數（streak）：只記錄「累積學習天數」與「本週學了幾天」，休息不會歸零。
-function addXP(n, reviewed = 1) {
+// 不做連續天數（streak）也不計分：只記錄每天練習了幾次，算「累積學習天數」和學習趨勢，休息不會歸零。
+function logActivity(n = 1) {
   const t = today();
-  state.xp += n;
-  state.xpDay[t] = (state.xpDay[t] || 0) + n;
-  state.history[t] = (state.history[t] || 0) + (+reviewed);
+  state.history[t] = (state.history[t] || 0) + (+n);
   save();
 }
 function totalDays() { return Object.keys(state.history).filter(d => state.history[d] > 0).length; }
@@ -70,10 +68,6 @@ function nextSRS(prev, grade) {
   return s;
 }
 function schedule(id, grade) {
-  if (!state.srs[id] && id.startsWith('v')) {
-    if (state.newDay.date !== today()) state.newDay = { date: today(), count: 0 };
-    state.newDay.count++;
-  }
   state.srs[id] = nextSRS(state.srs[id], grade);
   save();
 }
@@ -315,7 +309,8 @@ function viewKana(q) {
         : '<span class="kana-cell empty"></span>').join('')).join('')}
     </div>`;
   view.innerHTML = `
-    <div class="row between"><div><h1>五十音</h1><p class="sub">點擊假名查看口訣、聽發音、練習手寫。底線顏色＝熟練度。</p></div>
+    <a href="#/discover" class="muted backlink">‹ 發現</a>
+    <div class="row between"><div><h1 style="margin-top:8px">五十音</h1><p class="sub">點擊假名查看口訣、聽發音、練習手寫。底線顏色＝熟練度。</p></div>
       <a class="btn primary" href="#/kanaquiz?t=${type}">開始測驗</a></div>
     <div class="row" style="margin-bottom:8px">
       <a class="chip ${type === 'hira' ? 'on' : ''}" href="#/kana">ひらがな 平假名</a>
@@ -374,7 +369,8 @@ function viewKanaQuiz(q) {
   const type = q.get('t') || 'hira';
   if (!q.get('go')) {
     view.innerHTML = `
-      <h1>五十音測驗</h1><p class="sub">選擇範圍。題型會混合：看字打拼音、看拼音選字、聽音選字。打錯的字會更常出現。</p>
+      <a href="#/discover" class="muted backlink">‹ 發現</a>
+      <h1 style="margin-top:8px">五十音測驗</h1><p class="sub">選擇範圍。題型會混合：看字打拼音、看拼音選字、聽音選字。打錯的字會更常出現。</p>
       <div class="card">
         <div class="field"><b>文字</b><div class="row">
           ${[['hira', '平假名'], ['kata', '片假名'], ['both', '混合']].map(([v, l]) => `<button class="chip ${v === type ? 'on' : ''}" data-t="${v}">${l}</button>`).join('')}</div></div>
@@ -402,11 +398,11 @@ function viewKanaQuiz(q) {
   let idx = 0, correct = 0;
   const step = () => {
     if (idx >= qs.length) {
-      return showResult({ title: '五十音測驗完成', correct, total: qs.length, xp: correct * 2, again: location.hash, back: '#/kana' + (type === 'kata' ? '?t=kata' : '') });
+      return showResult({ title: '五十音測驗完成', correct, total: qs.length, again: location.hash, back: '#/kana' + (type === 'kata' ? '?t=kata' : '') });
     }
     const [k, r] = qs[idx];
-    const stage = sessionShell(idx / qs.length, null, '#/kana');
-    const record = ok => { const s = state.kana[k] || { c: 0, w: 0 }; ok ? s.c++ : s.w++; state.kana[k] = s; if (ok) { correct++; addXP(2); } else save(); };
+    const stage = sessionShell(idx / qs.length, '#/kana');
+    const record = ok => { const s = state.kana[k] || { c: 0, w: 0 }; ok ? s.c++ : s.w++; state.kana[k] = s; if (ok) correct++; logActivity(); };
     const next = () => { idx++; step(); };
     const mode = pick(['type', 'type', 'choice', 'listen']);
     const distract = () => shuffle(pool.filter(p => p[0] !== k && p[1] !== r)).slice(0, 3);
@@ -428,7 +424,7 @@ function viewKanaQuiz(q) {
 // =====================================================================
 // 練習介面元件
 // =====================================================================
-function sessionShell(progress, hearts, exitHref) {
+function sessionShell(progress, exitHref) {
   document.body.classList.add('in-session');
   view.innerHTML = `
     <div class="session">
@@ -523,7 +519,7 @@ function askTiles(stage, q, onResult, onContinue) {
   $('#check', stage).onclick = check;
   keyHandler = e => { if (e.key === 'Enter') { e.preventDefault(); check(); } };
 }
-function showResult({ title, correct, total, xp, again, back }) {
+function showResult({ title, correct, total, again, back }) {
   keyHandler = null;
   const acc = total ? Math.round(correct / total * 100) : 0;
   view.innerHTML = `
@@ -532,7 +528,7 @@ function showResult({ title, correct, total, xp, again, back }) {
       <h1>${title}</h1>
       <div class="grid grid-4" style="margin:24px 0">
         <div class="stat"><span class="big">${acc}%</span><span class="lbl">正確率</span></div>
-        <div class="stat"><span class="big">+${xp}</span><span class="lbl">XP</span></div>
+        <div class="stat"><span class="big">${correct}/${total}</span><span class="lbl">答對</span></div>
         <div class="stat"><span class="big">${totalDays()}</span><span class="lbl">累積學習天數</span></div>
       </div>
       <div class="row" style="justify-content:center">
@@ -568,19 +564,19 @@ function viewStudy(q) {
   fresh.forEach((id, i) => queue.splice(Math.min(queue.length, i * 3), 0, { id, isNew: true, stage: 'lesson' }));
   const total = queue.length;
   const graded = new Set();
-  let correct = 0, xp = 0;
+  let correct = 0;
 
   const step = () => {
-    if (!queue.length) return showResult({ title: '今日學習完成！', correct, total, xp, back: '#/discover' });
+    if (!queue.length) return showResult({ title: '複習完成！', correct, total, back: '#/discover' });
     const cur = queue[0];
     const item = ITEMS[cur.id];
-    const stage = sessionShell(graded.size / total, null, '#/discover');
+    const stage = sessionShell(graded.size / total, '#/discover');
     const next = () => { queue.shift(); step(); };
     const result = (ok, grade) => {
       if (!graded.has(cur.id)) {
         graded.add(cur.id);
         schedule(cur.id, grade ?? (ok ? 2 : 0));
-        if (ok) { correct++; xp += 10; addXP(10); } else addXP(1);
+        if (ok) correct++; logActivity();
       }
       if (!ok) queue.push({ id: cur.id, isNew: false, stage: 'q', retry: true });
     };
@@ -670,7 +666,7 @@ function viewGrammar(q) {
     const learned = !!state.srs[id];
     const i = GRAMMAR.findIndex(x => x.id === id);
     view.innerHTML = `
-      <a href="#/grammar" class="muted" style="text-decoration:none">← 文法列表</a>
+      <a href="#/grammar" class="muted backlink">‹ 文法</a>
       <div class="card" style="margin-top:12px">${grammarBody(g)}</div>
       <div class="row" style="margin-top:16px">
         ${learned ? `<span class="lvl ${level(id).cls}">已加入複習 · ${level(id).name}</span>` : `<button class="btn primary" id="learn">✓ 學會了，加入每日複習</button>`}
@@ -678,11 +674,11 @@ function viewGrammar(q) {
         ${GRAMMAR[i + 1] ? `<a class="btn" href="#/grammar?id=${GRAMMAR[i + 1].id}">下一個 →</a>` : ''}
       </div>
       <div id="tryBox" style="margin-top:16px"></div>`;
-    if (!learned) $('#learn').onclick = () => { schedule(id, 2); addXP(5); toast('已加入每日複習 +5 XP'); viewGrammar(q); };
-    $('#try').onclick = () => { const box = $('#tryBox'); askCloze(box, g, ok => ok && addXP(2), () => { box.innerHTML = ''; keyHandler = null; }); };
+    if (!learned) $('#learn').onclick = () => { schedule(id, 2); logActivity(); toast('已加入每日複習'); viewGrammar(q); };
+    $('#try').onclick = () => { const box = $('#tryBox'); askCloze(box, g, () => logActivity(), () => { box.innerHTML = ''; keyHandler = null; }); };
     return;
   }
-  view.innerHTML = `<h1>N5 文法</h1><p class="sub">閱讀說明與例句後按「學會了」，它就會出現在每日複習的填空題中。</p>
+  view.innerHTML = `<a href="#/discover" class="muted backlink">‹ 發現</a><h1 style="margin-top:8px">N5 文法</h1><p class="sub">閱讀說明與例句後按「學會了」，它就會出現在每日複習的填空題中。</p>
     <div class="grid">${GRAMMAR.map((g, i) => { const l = level(g.id); return `
       <a class="card grammar-item" href="#/grammar?id=${g.id}" style="text-decoration:none;color:inherit;padding:14px 18px">
         <span class="muted small" style="width:24px">${i + 1}</span>
@@ -705,14 +701,14 @@ function viewChallenge() {
     () => { const g = pick(gPool.length ? gPool : GRAMMAR.slice(0, 8)); return (st, r, n) => askCloze(st, g, r, n); },
   ];
   const qs = Array.from({ length: 10 }, (_, i) => builders[i % builders.length]()).sort(() => Math.random() - .5);
-  let idx = 0, correct = 0, xp = 0, combo = 0;
+  let idx = 0, correct = 0, combo = 0;
   const step = () => {
-    if (idx >= qs.length) return showResult({ title: '練習完成！', correct, total: qs.length, xp, again: '#/challenge', back: '#/discover' });
-    const stage = sessionShell(idx / qs.length, null, '#/discover');
+    if (idx >= qs.length) return showResult({ title: '練習完成！', correct, total: qs.length, again: '#/challenge', back: '#/discover' });
+    const stage = sessionShell(idx / qs.length, '#/discover');
     if (combo >= 3) stage.insertAdjacentHTML('beforebegin', `<div class="tag" style="margin-bottom:10px">連續答對 ${combo} 題</div>`);
     qs[idx](stage, ok => {
-      if (ok) { combo++; const g = 5 + Math.min(combo, 5); correct++; xp += g; addXP(g); }
-      else { combo = 0; addXP(1); xp += 1; }
+      if (ok) { combo++; correct++; } else combo = 0;
+      logActivity();
     }, () => { idx++; step(); });
   };
   step();

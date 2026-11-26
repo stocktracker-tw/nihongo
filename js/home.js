@@ -91,7 +91,10 @@ function homeTop() {
     <a class="icon-btn" href="#/listen" aria-label="隨身聽">${ico('headphones')}</a>
   </div>`;
 }
-function bindHomeTop() { $('#goDict').onclick = () => { location.hash = '#/dict?focus=1'; }; }
+function bindHomeTop() {
+  $('#goDict').onclick = () => { location.hash = '#/dict?focus=1'; };
+  keyHandler = e => { if (e.key === '/') { e.preventDefault(); location.hash = '#/dict?focus=1'; } };
+}
 function pickerHTML() {
   return `<div class="picker">
     <div class="small muted">學習的單字書</div>
