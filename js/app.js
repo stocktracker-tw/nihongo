@@ -18,25 +18,21 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 
 // ===== 狀態 =====
 const KEY = 'nihongo-dojo-v1'; // 沿用舊 key，保留既有進度
-const DEFAULT_SETTINGS = { goal: 50, newPerDay: 10, theme: 'dark', furigana: true, autoplay: true, rate: 0.9 };
+// 沒有設定頁：全部用固定值（深色、振假名、自動發音、正常語速、每日小目標 50 XP）
+const SETTINGS = Object.freeze({ goal: 50, newPerDay: 10, furigana: true, autoplay: true, rate: 0.9 });
 let state = load();
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY));
-    if (s) {
-      const st = { ...blank(), ...s, settings: { ...DEFAULT_SETTINGS, ...(s.settings || {}) } };
-      // v2：改為深色風格，舊設定一次性切到深色（之後可在設定改回）
-      if (!st.settings.v2) { st.settings.theme = 'dark'; st.settings.v2 = true; }
-      return st;
-    }
+    if (s) { const st = { ...blank(), ...s }; delete st.settings; return st; }
   } catch (e) { /* ignore */ }
   return blank();
 }
 function blank() {
-  return { srs: {}, kana: {}, lessons: {}, xp: 0, xpDay: {}, history: {}, newDay: { date: '', count: 0 }, settings: { ...DEFAULT_SETTINGS, v2: true } };
+  return { srs: {}, kana: {}, lessons: {}, xp: 0, xpDay: {}, history: {}, newDay: { date: '', count: 0 } };
 }
 function save() { localStorage.setItem(KEY, JSON.stringify(state)); renderMini(); }
-const S = () => state.settings;
+const S = () => SETTINGS;
 
 // 不做連續天數（streak）：只記錄「累積學習天數」與「本週學了幾天」，休息不會歸零。
 function addXP(n, reviewed = 1) {
@@ -192,11 +188,7 @@ view.addEventListener('click', e => {
   if (b) { e.stopPropagation(); speak(b.dataset.say); }
 });
 
-function applyTheme() {
-  const t = S().theme === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : S().theme;
-  document.documentElement.dataset.theme = t;
-}
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+function applyTheme() { document.documentElement.dataset.theme = 'dark'; }
 
 function renderMini() {
   const el = $('#miniStats');
@@ -204,7 +196,7 @@ function renderMini() {
 }
 
 // ===== 路由 =====
-const routes = { home: viewPath, lesson: viewLesson, guide: viewGuide, kana: viewKana, vocab: viewVocab, grammar: viewGrammar, challenge: viewChallenge, settings: viewSettings, study: viewStudy, kanaquiz: viewKanaQuiz };
+const routes = { home: viewPath, lesson: viewLesson, guide: viewGuide, kana: viewKana, vocab: viewVocab, grammar: viewGrammar, challenge: viewChallenge, study: viewStudy, kanaquiz: viewKanaQuiz };
 function route() {
   keyHandler = null;
   gentleRetry = false;
@@ -670,52 +662,6 @@ function viewChallenge() {
     }, () => { idx++; step(); });
   };
   step();
-}
-
-// =====================================================================
-// 設定
-// =====================================================================
-function viewSettings() {
-  const s = S();
-  const sw = (k, label, hint) => `<div class="field"><div><b>${label}</b>${hint ? `<div class="small muted">${hint}</div>` : ''}</div><label class="switch"><input type="checkbox" data-k="${k}" ${s[k] ? 'checked' : ''}><span></span></label></div>`;
-  view.innerHTML = `
-    <h1>設定</h1><p class="sub">所有資料只存在你的瀏覽器（localStorage），不會上傳。</p>
-    <div class="card">
-      <div class="field"><div><b>每日小目標</b><div class="small muted">只是參考，沒達成也不會怎樣</div></div><select data-k="goal">${[[0, '不設目標'], [20, '20 XP（輕鬆）'], [50, '50 XP（一般）'], [100, '100 XP（認真）']].map(([n, l]) => `<option value="${n}" ${n === s.goal ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
-      <div class="field"><div><b>單字庫一次學幾個</b><div class="small muted">單字頁「學新單字」用，建議 5–15</div></div><input type="number" min="0" max="50" data-k="newPerDay" value="${s.newPerDay}" style="width:80px"></div>
-      <div class="field"><b>外觀</b><select data-k="theme">${[['auto', '跟隨系統'], ['light', '淺色'], ['dark', '深色']].map(([v, l]) => `<option value="${v}" ${v === s.theme ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
-      ${sw('furigana', '顯示振假名', '漢字上方標示讀音')}
-      ${sw('autoplay', '自動播放發音', '作答後自動朗讀')}
-      <div class="field"><div><b>語速</b><div class="small muted">${jaVoice ? '語音：' + esc(jaVoice.name) : '未偵測到日文語音，請在系統安裝日文語音'}</div></div>
-        <div class="row"><select data-k="rate">${[[0.7, '慢'], [0.9, '正常'], [1.1, '快']].map(([v, l]) => `<option value="${v}" ${v === s.rate ? 'selected' : ''}>${l}</option>`).join('')}</select>${audioBtn('こんにちは、日本語を勉強しましょう')}</div></div>
-    </div>
-    <h2>資料</h2>
-    <div class="card">
-      <div class="field"><div><b>匯出進度</b><div class="small muted">下載 JSON 備份，可在其他裝置匯入</div></div><button class="btn" id="exp">匯出</button></div>
-      <div class="field"><div><b>匯入進度</b><div class="small muted">會覆蓋目前進度</div></div><label class="btn">匯入<input type="file" id="imp" accept=".json" hidden></label></div>
-      <div class="field"><div><b>重設全部進度</b></div><button class="btn" id="reset" style="color:var(--bad)">重設</button></div>
-    </div>
-    <p class="small muted" style="margin-top:24px">鍵盤快捷鍵：1–4 選擇答案 · Enter 確認／繼續 · Space 翻卡。輸入框直接打羅馬拼音會自動轉成假名（nn → ん、kka → っか、- → ー）。</p>`;
-  $$('[data-k]').forEach(el => el.onchange = () => {
-    const k = el.dataset.k;
-    s[k] = el.type === 'checkbox' ? el.checked : (k === 'theme' ? el.value : +el.value);
-    save(); applyTheme(); toast('已儲存');
-  });
-  $('#exp').onclick = () => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([JSON.stringify(state, null, 1)], { type: 'application/json' }));
-    a.download = `nihongo-${today()}.json`; a.click();
-  };
-  $('#imp').onchange = e => {
-    const f = e.target.files[0]; if (!f) return;
-    f.text().then(t => {
-      try { const d = JSON.parse(t); if (typeof d !== 'object' || !d.srs) throw 0; localStorage.setItem(KEY, JSON.stringify(d)); state = load(); save(); applyTheme(); toast('匯入成功'); viewSettings(); }
-      catch { toast('檔案格式不正確'); }
-    });
-  };
-  $('#reset').onclick = () => {
-    if (confirm('確定要清除全部學習進度嗎？此動作無法復原。')) { localStorage.removeItem(KEY); state = load(); save(); applyTheme(); toast('已重設'); viewSettings(); }
-  };
 }
 
 // ===== 分頁列：可拖曳的玻璃膠囊（互動同 Stock Tracker）=====
