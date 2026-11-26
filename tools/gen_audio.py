@@ -15,8 +15,33 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'audio')
 # 聲音：Nanami HD，調成成熟「大姊姊」感（低一點、慢一點）
 VOICE = os.environ.get('NIHONGO_VOICE', 'ja-JP-Nanami:DragonHDLatestNeural')
+# HD 聲音遇到很短的輸入（單一假名、兩三拍的詞）常會拖音或多念雜音，
+# 這些改用同一位說話者的標準版 Nanami（同樣低音慢速），句子和較長的詞才用 HD。
+SHORT_VOICE = 'ja-JP-NanamiNeural'
+SHORT_MORAE = 3
 RATE = '-12%'
 PITCH = '-8%'
+_SMALL = set('ゃゅょぁぃぅぇぉャュョァィゥェォ')
+
+
+def morae(s: str) -> int:
+    """大約的拍數：假名一字一拍（小字不算），漢字算兩拍。"""
+    n = 0
+    for ch in s:
+        if ch in _SMALL:
+            continue
+        if '぀' <= ch <= 'ヿ':
+            n += 1
+        elif '一' <= ch <= '鿿':
+            n += 2
+    return max(1, n)
+
+
+def voice_for(text: str, said: str) -> str:
+    # 原文是假名時用原文算拍數比較準（漢字的拍數只能估計）
+    has_kanji = any('一' <= ch <= '鿿' for ch in text)
+    m = morae(said) if has_kanji else morae(text)
+    return SHORT_VOICE if m <= SHORT_MORAE else VOICE
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -64,9 +89,10 @@ def speech_hash(s: str) -> str:
     return f'{h:08x}'
 
 
-def synth(text, key, region):
+def synth(text, key, region, voice=None):
+    voice = voice or VOICE
     ssml = (f"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='ja-JP'>"
-            f"<voice name='{VOICE}'><prosody rate='{RATE}' pitch='{PITCH}'>{escape(text)}</prosody></voice></speak>")
+            f"<voice name='{voice}'><prosody rate='{RATE}' pitch='{PITCH}'>{escape(text)}</prosody></voice></speak>")
     req = urllib.request.Request(
         f'https://{region}.tts.speech.microsoft.com/cognitiveservices/v1',
         data=ssml.encode('utf-8'), method='POST',
@@ -99,15 +125,15 @@ def main():
     # 記錄每個檔案是用什麼「念法＋聲音設定」產生的；念法或聲音變了就自動重做
     made_path = os.path.join(HERE, 'made.json')
     made_log = json.load(open(made_path, encoding='utf-8')) if os.path.exists(made_path) else {}
-    sig = f'{VOICE}|{RATE}|{PITCH}'
     index, made = {}, 0
     for i, t in enumerate(texts, 1):
         h = speech_hash(t)
         path = os.path.join(OUT, h + '.mp3')
         said = tts_text(t)
-        want = f'{sig}|{said}'
+        voice = voice_for(t, said)
+        want = f'{voice}|{RATE}|{PITCH}|{said}'
         if force or not os.path.exists(path) or made_log.get(h) != want:
-            data = synth(said, key, region)
+            data = synth(said, key, region, voice)
             with open(path, 'wb') as f:
                 f.write(data)
             made += 1
@@ -122,7 +148,7 @@ def main():
             os.remove(os.path.join(OUT, f))
     with open(os.path.join(OUT, 'index.json'), 'w', encoding='utf-8') as f:
         json.dump(sorted(index), f, separators=(',', ':'))
-    print(f'完成：共 {len(index)} 段，新產生 {made} 個檔案（{VOICE}）')
+    print(f'完成：共 {len(index)} 段，新產生 {made} 個檔案（短的用 {SHORT_VOICE}，其餘 {VOICE}）')
 
 
 if __name__ == '__main__':
