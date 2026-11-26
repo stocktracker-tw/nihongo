@@ -37,7 +37,13 @@ def morae(s: str) -> int:
     return max(1, n)
 
 
+# 檢查工具抓到 HD 版會多念雜音的字，固定用標準版
+FORCE_SHORT = {'保守', '秘書', '補助'}
+
+
 def voice_for(text: str, said: str) -> str:
+    if text in FORCE_SHORT:
+        return SHORT_VOICE
     # 原文是假名時用原文算拍數比較準（漢字的拍數只能估計）
     has_kanji = any('一' <= ch <= '鿿' for ch in text)
     m = morae(said) if has_kanji else morae(text)
