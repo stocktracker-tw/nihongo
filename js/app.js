@@ -18,7 +18,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 
 // ===== 狀態 =====
 const KEY = 'nihongo-dojo-v1'; // 沿用舊 key，保留既有進度
-// 沒有設定頁：全部用固定值（深色、振假名、自動發音、正常語速、每日小目標 50 XP）
+// 沒有設定頁：全部用固定值（無印良品淺色、振假名、自動發音、正常語速、每日小目標 50 XP）
 const SETTINGS = Object.freeze({ goal: 50, newPerDay: 10, furigana: true, autoplay: true, rate: 0.9 });
 let state = load();
 function load() {
@@ -188,7 +188,7 @@ view.addEventListener('click', e => {
   if (b) { e.stopPropagation(); speak(b.dataset.say); }
 });
 
-function applyTheme() { document.documentElement.dataset.theme = 'dark'; }
+function applyTheme() { document.documentElement.dataset.theme = 'light'; }
 
 function renderMini() {
   const el = $('#miniStats');

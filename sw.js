@@ -1,6 +1,6 @@
 // 離線快取（stale-while-revalidate）：
 // 先用快取立刻顯示，同時在背景抓新版存起來，下次開啟就是最新版。
-const CACHE = 'nihongo-v7';
+const CACHE = 'nihongo-v8';
 const ASSETS = ['./', 'index.html', 'css/style.css', 'js/data.js', 'js/course.js', 'js/lesson.js', 'js/app.js', 'manifest.json',
   'img/favicon-64.png', 'img/icon-192.png', 'img/apple-touch-icon.png', 'img/kuro.webp', 'img/glassmap.png'];
 
