@@ -72,6 +72,7 @@ function viewPath() {
       <div class="row">
         ${nx ? `<a class="btn primary big" href="${lessonHref(nx)}">${started ? '繼續學習' : '開始第一課'}</a>` : '<span class="tag">全部課程完成了 🎉</span>'}
         ${due ? `<a class="btn" href="#/study">複習 ${due} 個</a>` : ''}
+        ${wordDueCount() ? `<a class="btn" href="#/vocab">單字待複習 ${wordDueCount()}</a>` : ''}
         <a class="btn" href="#/challenge">自由練習</a>
       </div>
     </div>

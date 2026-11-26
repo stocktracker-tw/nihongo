@@ -20,11 +20,17 @@ const BOOKS = [
 const BOOK_SIZE = { n5: 717, n4: 667, n3: 2139, n2: 1806, n1: 2698 };
 const DAILY_CHOICES = [5, 10, 20, 30];
 const REVIEW_CAP = 150;
-const bookCache = {};
+const bookCache = {};   // lv → Promise
+const bookData = {};    // lv → 已載入的單字陣列
 function loadBook(lv) {
-  if (!bookCache[lv]) bookCache[lv] = fetch(`data/jlpt/${lv}.json`).then(r => r.json());
+  if (!bookCache[lv]) {
+    bookCache[lv] = fetch(`data/jlpt/${lv}.json`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(ws => (bookData[lv] = ws))
+      .catch(e => { delete bookCache[lv]; throw e; });   // 失敗（離線）時下次可重試
+  }
   return bookCache[lv];
 }
+const stillOn = route => location.hash.replace(/^#\//, '').split('?')[0] === route;
 function wordState(id) {
   if (state.mastered && state.mastered[id]) return { k: 'm', name: '已掌握', cls: 'l4' };
   const s = state.srs[id];
@@ -52,8 +58,9 @@ const wordHint = w => `${esc(w.w)}${w.r ? '（' + esc(w.r) + '）' : ''}　${esc
 async function viewBooks() {
   const b = curBook();
   view.innerHTML = `<h1>單字書</h1><p class="sub">載入中…</p>`;
-  const words = await loadBook(b.lv);
-  if (location.hash.split('?')[0] !== '#/vocab') return;
+  let words;
+  try { words = await loadBook(b.lv); } catch (e) { return loadFailed(); }
+  if (!stillOn('vocab')) return;
   const m = state.mastered || {};
   const learned = words.filter(w => state.srs[w.i] || m[w.i]).length;
   const mastered = words.filter(w => m[w.i]).length;
@@ -87,6 +94,7 @@ async function viewBooks() {
     <div class="grid books">${BOOKS.map(x => `
       <button class="card book ${x.lv === b.lv ? 'cur' : ''}" data-lv="${x.lv}" style="--c:${x.c}">
         <span class="book-tag">${x.name}</span><span class="muted small">${x.desc} · ${BOOK_SIZE[x.lv]} 字</span>
+        <span class="due small" ${bookDue(x.lv) ? '' : 'hidden'}>待複習 ${bookDue(x.lv)}</span>
         <span class="bar"><i style="width:${bookProgress(x.lv)}%"></i></span></button>`).join('')}</div>
     <h2>查單字</h2>
     <input class="answer-input" id="dict" placeholder="輸入漢字、假名、羅馬拼音或中文" style="font-size:16px;text-align:left;margin:0">
@@ -98,19 +106,49 @@ async function viewBooks() {
   $('#dict').oninput = e => { clearTimeout(timer); timer = setTimeout(() => dictSearch(e.target.value.trim()), 180); };
 }
 function bookProgress(lv) {
-  const words = bookCache[lv] && bookCache[lv].done;
-  if (!words) { loadBook(lv).then(w => { bookCache[lv].done = w; const el = $(`.book[data-lv="${lv}"] .bar i`); if (el) el.style.width = bookProgress(lv) + '%'; }); return 0; }
+  const words = bookData[lv];
+  if (!words) {
+    loadBook(lv).then(() => {
+      const el = $(`.book[data-lv="${lv}"] .bar i`); if (el) el.style.width = bookProgress(lv) + '%';
+      const d = $(`.book[data-lv="${lv}"] .due`); const n = bookDue(lv); if (d && n) { d.textContent = `待複習 ${n}`; d.hidden = false; }
+    }).catch(() => {});
+    return 0;
+  }
   const m = state.mastered || {};
   return words.filter(w => state.srs[w.i] || m[w.i]).length / words.length * 100;
 }
+function bookDue(lv) {
+  const words = bookData[lv]; if (!words) return 0;
+  const now = Date.now(), m = state.mastered || {};
+  return words.filter(w => !m[w.i] && state.srs[w.i] && state.srs[w.i].due <= now).length;
+}
+let dictIndex = null;
 async function dictSearch(q) {
   const out = $('#dictOut'); if (!out) return;
   if (!q) { out.style.display = 'none'; return; }
-  const all = (await Promise.all(BOOKS.map(b => loadBook(b.lv).then(ws => ws.map(w => ({ ...w, lv: b.name })))))).flat();
+  if (!dictIndex) {
+    try {
+      const books = await Promise.all(BOOKS.map(b => loadBook(b.lv).then(ws => ws.map(w => ({ ...w, lv: b.name, _k: toHiragana((w.r || w.w).replace(/[～〜\s]/g, '')), _w: toHiragana(w.w) })))));
+      dictIndex = books.flat();
+    } catch (e) { out.style.display = ''; out.innerHTML = '<p class="muted">單字資料載入失敗，請確認網路連線。</p>'; return; }
+  }
+  if ($('#dict') && $('#dict').value.trim() !== q) return;   // 使用者已經改了查詢
   const kana = toHiragana(romajiToKana(q.toLowerCase(), true));
-  const hit = all.filter(w => w.w.includes(q) || (w.r && toHiragana(w.r).startsWith(kana)) || toHiragana(w.w).startsWith(kana) || w.m.includes(q)).slice(0, 40);
+  const exact = [], prefix = [], other = [];
+  for (const w of dictIndex) {
+    if (w.w === q || w._k === kana) exact.push(w);
+    else if (w._k.startsWith(kana) || w._w.startsWith(kana) || w.w.includes(q)) prefix.push(w);
+    else if (w.m.includes(q)) other.push(w);
+    if (exact.length + prefix.length >= 40) break;
+  }
+  const hit = [...exact, ...prefix, ...other].slice(0, 40);
   out.style.display = '';
   out.innerHTML = hit.length ? `<table class="vocab-table"><tbody>${hit.map(wordRow).join('')}</tbody></table>` : '<p class="muted">找不到符合的單字</p>';
+}
+function loadFailed() {
+  view.innerHTML = `<div class="session"><div class="card result">${mascot(100)}<h1>單字資料載入失敗</h1>
+    <p class="muted">可能是沒有網路。連上網路後再試一次，載入過的書之後離線也能用。</p>
+    <button class="btn primary" onclick="route()">再試一次</button></div></div>`;
 }
 function wordRow(w) {
   const st = wordState(w.i);
@@ -123,7 +161,9 @@ async function viewBook(q) {
   const b = BOOKS.find(x => x.lv === q.get('lv')) || curBook();
   const filter = q.get('f') || 'all';
   view.innerHTML = `<p class="muted">載入中…</p>`;
-  const words = await loadBook(b.lv);
+  let words;
+  try { words = await loadBook(b.lv); } catch (e) { return loadFailed(); }
+  if (!stillOn('book')) return;
   const list = words.filter(w => filter === 'all' || wordState(w.i).k === filter || (filter === 'l' && wordState(w.i).k === 'r'));
   let shown = 100;
   const tabs = [['all', '全部'], ['n', '未學'], ['l', '學習中'], ['m', '已掌握']];
@@ -145,7 +185,9 @@ async function viewBook(q) {
 async function viewWordStudy(q) {
   const b = curBook();
   view.innerHTML = `<p class="muted">載入中…</p>`;
-  const words = await loadBook(b.lv);
+  let words;
+  try { words = await loadBook(b.lv); } catch (e) { return loadFailed(); }
+  if (!stillOn('wordstudy')) return;
   const extra = +q.get('extra') || 0;
   const plan = planFor(words, extra);
   if (!plan.due.length && !plan.fresh.length) { location.hash = '#/vocab'; return; }

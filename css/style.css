@@ -511,3 +511,4 @@ h1 { font-size: clamp(24px, 4vw, 30px); font-weight: 800; letter-spacing: .01em;
 .task > div { display: block; }
 .task .lbl { display: block; }
 [hidden] { display: none !important; }
+.book .due { color: var(--amber); font-weight: 600; }

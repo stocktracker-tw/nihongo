@@ -1,8 +1,8 @@
 'use strict';
 // =====================================================================
-// Nihongo — 綜合 Anki（間隔重複）、WaniKani（輸入作答、等級）、
-// Duolingo（連續天數、XP、愛心挑戰、拼字塊造句）、Bunpro（文法填空）、
-// Tofugu（五十音口訣）與手寫練習的單檔靜態 App。
+// Nihongo — Duolingo 式課程（不情勒：無愛心、無連續天數）、識日式單字書（N5～N1）、
+// Anki 間隔重複、WaniKani 輸入作答、Bunpro 文法填空、Tofugu 五十音口訣、手寫練習。
+// 純靜態網頁，資料只存在瀏覽器；發音為預先產生的 Azure 音檔。
 // =====================================================================
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -146,7 +146,7 @@ function bindIME(input) {
     if (v !== input.value) input.value = v;
   });
 }
-const normKana = s => toHiragana(romajiToKana(s.trim(), true)).replace(/[\s。、.,!?！？]/g, '');
+const normKana = s => toHiragana(romajiToKana(s.trim(), true)).replace(/[\s。、.,!?！？～〜・]/g, '');
 
 // ===== 語音 =====
 // 主要：Azure Neural TTS（Nanami HD，大姊姊聲線）預先產生的 mp3，放在 audio/<雜湊>.mp3。
@@ -230,9 +230,16 @@ view.addEventListener('click', e => {
 
 function applyTheme() { document.documentElement.dataset.theme = 'dark'; }
 
+// 單字書到期的字（不在 ITEMS 裡，單字資料是分級延遲載入的）
+function wordDueCount() {
+  const now = Date.now(), m = state.mastered || {};
+  let n = 0;
+  for (const id in state.srs) if (id[0] === 'j' && !m[id] && state.srs[id].due <= now) n++;
+  return n;
+}
 function renderMini() {
   const el = $('#miniStats');
-  if (el) el.innerHTML = `<span title="累積學習天數">${ico('calendar')}${totalDays()}</span><span title="總 XP">${ico('star')}${state.xp}</span><span title="待複習">${ico('cards')}${dueIds().length}</span>`;
+  if (el) el.innerHTML = `<span title="累積學習天數">${ico('calendar')}${totalDays()}</span><span title="總 XP">${ico('star')}${state.xp}</span><span title="待複習（課程＋單字書）">${ico('cards')}${dueIds().length + wordDueCount()}</span>`;
 }
 
 // ===== 路由 =====
@@ -246,7 +253,7 @@ function route() {
   const r = routes[name] ? name : 'home';
   $$('#nav a').forEach(a => a.toggleAttribute('aria-current', a.dataset.r === tabRoute(r)));
   view.innerHTML = '';
-  view.className = 'fade-in';
+  view.className = ''; void view.offsetWidth; view.className = 'fade-in';
   routes[r](new URLSearchParams(q || ''));
   if (window.__tabSync) window.__tabSync(true);
   window.scrollTo(0, 0);

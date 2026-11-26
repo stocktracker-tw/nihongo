@@ -43,6 +43,11 @@ def main():
                 note = (note + '；' if note else '') + '可加する作動詞'
         if note.startswith('する；'):
             note = note[3:]
+        m = re.match(r'^(.+)；\1$', note)          # 「タイム；タイム」這種重複
+        if m:
+            note = m.group(1)
+        w = re.sub(r'\s*～\s*', '～', w)            # 「～ しまう」→「～しまう」
+        rd = re.sub(r'\s*～\s*', '～', rd)
         plain_w = w.replace('～', '').strip()
         plain_r = rd.replace('～', '').strip()
         if KANJI.search(plain_w) and len(plain_w) >= 2 and expr_count[r['word']] == 1 and '～' not in w:
