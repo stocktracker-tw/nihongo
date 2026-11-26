@@ -1,0 +1,14 @@
+{
+  "name": "日語道場 Nihongo Dojo",
+  "short_name": "日語道場",
+  "description": "五十音、N5 單字間隔重複、文法與聽力挑戰",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f4ee",
+  "theme_color": "#c8423b",
+  "lang": "zh-Hant",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>日語道場 Nihongo Dojo</title>
+  <meta name="description" content="免費、離線可用的日語學習網頁 App：五十音、N5 單字間隔重複、文法、聽力與造句挑戰。">
+  <meta name="theme-color" content="#c8423b">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600&family=Noto+Serif+JP:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <nav class="nav" id="nav">
+      <div class="brand"><span class="brand-mark">日</span> 日語道場</div>
+      <a href="#/home" data-r="home"><span class="ico">家</span>首頁</a>
+      <a href="#/kana" data-r="kana"><span class="ico">あ</span>五十音</a>
+      <a href="#/vocab" data-r="vocab"><span class="ico">語</span>單字</a>
+      <a href="#/grammar" data-r="grammar"><span class="ico">文</span>文法</a>
+      <a href="#/challenge" data-r="challenge"><span class="ico">戦</span>挑戰</a>
+      <a href="#/settings" data-r="settings"><span class="ico">設</span>設定</a>
+      <div class="spacer"></div>
+      <div class="mini-stats" id="miniStats"></div>
+    </nav>
+    <main id="view"></main>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
