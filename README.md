@@ -28,6 +28,19 @@
 
 課程學到的單字會自動加入 **間隔重複複習**（Anki 的 SM-2 演算法），在快忘記的時候出現。
 
+### 單字書（N5～N1，學習方式仿「識日」）
+
+JLPT N5～N1 共 8,027 個單字，每個都有中文意思和 Azure 發音。
+
+- 選一本當作目前在背的書，每天先複習到期的字，再學新字（每日新詞 5／10／20／30）
+- 每張卡先自己回想，按「認識／模糊／不認識」，再看答案；按「認識」的要再確認「記對了／記錯了」
+- **洗腦循環**：沒記住的字在這一輪會一直回來，直到你說「認識」
+- **已掌握**：已經會的字直接標記，以後不再出現
+- 一輪結束後用**連連看**和**聽寫**鞏固
+- 可以查單字（漢字、假名、羅馬拼音、中文都能查）
+
+單字表來源：[open-anki-jlpt-decks](https://github.com/jamsinclair/open-anki-jlpt-decks)（MIT），原始資料 [tanos.co.uk](http://www.tanos.co.uk/jlpt/)（Jonathan Waller，CC BY）。原始檔在 `vendor/jlpt/`，中文釋義在 `tools/zh/`，用 `python -I tools/build_vocab.py` 產生 `data/jlpt/*.json`。
+
 ### 其他功能
 
 | 參考 | 功能 |

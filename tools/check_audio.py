@@ -56,6 +56,10 @@ def main():
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
     key, region = os.environ['AZURE_SPEECH_KEY'], os.environ['AZURE_SPEECH_REGION']
     texts = json.load(open(os.path.join(HERE, 'texts.json'), encoding='utf-8'))
+    jl = os.path.join(HERE, 'texts_jlpt.json')
+    if os.path.exists(jl):
+        have = set(texts)
+        texts += [t for t in json.load(open(jl, encoding='utf-8')) if t not in have]
     flagged = []
     for t in texts:
         x = pcm(os.path.join(ROOT, 'audio', gen.speech_hash(t) + '.mp3'))

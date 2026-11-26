@@ -479,3 +479,35 @@ h1 { font-size: clamp(24px, 4vw, 30px); font-weight: 800; letter-spacing: .01em;
 .choice { position: relative; }
 .choice .kbd { position: absolute; top: 8px; right: 10px; margin: 0; }
 .btn .kbd { margin-left: 8px; }
+
+/* ===== 單字書（識日式）===== */
+.book-hero { border-top: 4px solid var(--c); }
+.book-tag { display: inline-block; font-weight: 800; font-size: 13px; letter-spacing: .06em; color: #fff; background: var(--c); padding: 2px 10px; border-radius: 8px; margin-bottom: 6px; }
+.ring-num { font-size: 34px; font-weight: 800; color: var(--amber); }
+.ring-num small { font-size: 16px; margin-left: 2px; }
+.task { display: grid; grid-template-columns: repeat(3, 1fr); border-radius: 16px; background: rgba(0,0,0,.18); border: 1px solid var(--glass-border); }
+.task > div { padding: 10px 14px; display: flex; flex-direction: column; }
+.task > div + div { border-left: 1px solid var(--line); }
+.task .lbl { font-size: 12px; color: var(--ink-2); }
+.task b { font-size: 22px; }
+.task small { color: var(--ink-2); }
+.books { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.book { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 14px 16px; cursor: pointer; font: inherit; color: inherit; transition: transform .12s; }
+.book:hover { transform: translateY(-2px); }
+.book.cur { border-color: var(--c); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 60%, transparent), var(--shadow); }
+.book .bar { width: 100%; }
+.word-card-big { padding-top: 46px; min-height: 260px; display: flex; flex-direction: column; justify-content: center; }
+.word-card-big .prompt-word { font-size: clamp(44px, 10vw, 68px); }
+.judge { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+.judge:has(> :nth-child(2):last-child) { grid-template-columns: 1fr 1fr; }
+.judge .btn { padding: 16px 8px; font-size: 17px; border-radius: 20px; }
+.j-yes { border-color: color-mix(in srgb, var(--good) 55%, transparent) !important; color: var(--good) !important; }
+.j-maybe { border-color: color-mix(in srgb, var(--warn) 55%, transparent) !important; color: var(--warn) !important; }
+.j-no { border-color: color-mix(in srgb, var(--bad) 55%, transparent) !important; color: var(--bad) !important; }
+.linkbtn { background: none; border: 0; color: var(--ink-2); font-size: 13px; display: inline-flex; gap: 5px; align-items: center; padding: 6px 10px; border-radius: 999px; }
+.linkbtn:hover { color: var(--amber); background: rgba(255,244,226,.05); }
+@media (max-width: 520px) { .task b { font-size: 18px; } .judge .btn { padding: 14px 4px; font-size: 16px; } }
+.book .book-tag { align-self: flex-start; }
+.task > div { display: block; }
+.task .lbl { display: block; }
+[hidden] { display: none !important; }

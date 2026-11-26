@@ -29,7 +29,7 @@ function load() {
   return blank();
 }
 function blank() {
-  return { srs: {}, kana: {}, lessons: {}, xp: 0, xpDay: {}, history: {}, newDay: { date: '', count: 0 } };
+  return { srs: {}, kana: {}, lessons: {}, xp: 0, xpDay: {}, history: {}, newDay: { date: '', count: 0 }, book: 'n5', dailyNew: 10, mastered: {}, wdone: null };
 }
 function save() { localStorage.setItem(KEY, JSON.stringify(state)); renderMini(); }
 const S = () => SETTINGS;
@@ -236,7 +236,7 @@ function renderMini() {
 }
 
 // ===== 路由 =====
-const routes = { home: viewPath, lesson: viewLesson, guide: viewGuide, kana: viewKana, vocab: viewVocab, grammar: viewGrammar, challenge: viewChallenge, study: viewStudy, kanaquiz: viewKanaQuiz };
+const routes = { home: viewPath, lesson: viewLesson, guide: viewGuide, kana: viewKana, vocab: viewBooks, book: viewBook, wordstudy: viewWordStudy, grammar: viewGrammar, challenge: viewChallenge, study: viewStudy, kanaquiz: viewKanaQuiz };
 function route() {
   keyHandler = null;
   gentleRetry = false;
@@ -622,23 +622,6 @@ function askCloze(stage, g, result, next) {
 // =====================================================================
 // 單字列表
 // =====================================================================
-function viewVocab() {
-  const cats = [...new Set(VOCAB.map(v => v.cat))];
-  let cat = '全部', query = '';
-  view.innerHTML = `
-    <div class="row between"><div><h1>N5 單字</h1><p class="sub">${VOCAB.length} 個單字 · 點擊任一列可聽發音。課程以外想多學，可以從這裡一次學 ${S().newPerDay} 個。</p></div><a class="btn primary" href="#/study?new=1">學 ${S().newPerDay} 個新單字</a></div>
-    <input class="answer-input" id="search" placeholder="搜尋：漢字、假名、中文或羅馬拼音" style="font-size:16px;text-align:left;margin:0 0 12px">
-    <div class="row" id="cats">${['全部', ...cats].map(c => `<button class="chip ${c === '全部' ? 'on' : ''}" data-c="${c}">${c}</button>`).join('')}</div>
-    <div class="card" style="margin-top:14px;padding:6px 16px;overflow-x:auto"><table class="vocab-table"><thead><tr><th>單字</th><th>讀音</th><th>中文</th><th>等級</th></tr></thead><tbody id="vt"></tbody></table></div>`;
-  const draw = () => {
-    const qk = query ? toHiragana(romajiToKana(query, true)) : '';
-    const list = VOCAB.filter(v => (cat === '全部' || v.cat === cat) && (!query || v.word.includes(query) || v.meaning.includes(query) || toHiragana(v.reading).includes(qk)));
-    $('#vt').innerHTML = list.map(v => { const l = level(v.id); return `<tr data-say="${esc(v.reading)}" style="cursor:pointer"><td class="w">${esc(v.word)}</td><td class="jp muted">${esc(v.reading)}</td><td>${esc(v.meaning)}</td><td><span class="lvl ${l.cls}">${l.name}</span></td></tr>`; }).join('') || '<tr><td colspan="4" class="muted">找不到符合的單字</td></tr>';
-  };
-  $('#search').oninput = e => { query = e.target.value.trim(); draw(); };
-  $$('#cats .chip').forEach(b => b.onclick = () => { cat = b.dataset.c; $$('#cats .chip').forEach(x => x.classList.toggle('on', x === b)); draw(); });
-  draw();
-}
 
 // =====================================================================
 // 文法
@@ -706,7 +689,7 @@ function viewChallenge() {
 
 // ===== 分頁列：可拖曳的玻璃膠囊（互動同 Stock Tracker）=====
 // 按住整條列 → 膠囊變透鏡、可左右拖，最靠近的分頁亮起；放開時膠囊滑到該分頁並切換。
-const TAB_ALIAS = { study: 'home', lesson: 'home', guide: 'home', kanaquiz: 'kana' };
+const TAB_ALIAS = { study: 'home', lesson: 'home', guide: 'home', kanaquiz: 'kana', book: 'vocab', wordstudy: 'vocab' };
 function tabRoute(r) { return TAB_ALIAS[r] || r; }
 function setupTabbar() {
   const bar = $('#nav'); if (!bar) return;
