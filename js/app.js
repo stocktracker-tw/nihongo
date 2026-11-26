@@ -19,17 +19,22 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 
 // ===== 狀態 =====
 const KEY = 'nihongo-dojo-v1';
-const DEFAULT_SETTINGS = { goal: 50, newPerDay: 10, theme: 'light', furigana: true, autoplay: true, rate: 0.9 };
+const DEFAULT_SETTINGS = { goal: 50, newPerDay: 10, theme: 'dark', furigana: true, autoplay: true, rate: 0.9 };
 let state = load();
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY));
-    if (s) return { ...blank(), ...s, settings: { ...DEFAULT_SETTINGS, ...(s.settings || {}) } };
+    if (s) {
+      const st = { ...blank(), ...s, settings: { ...DEFAULT_SETTINGS, ...(s.settings || {}) } };
+      // v2：改為深色風格，舊設定一次性切到深色（之後可在設定改回）
+      if (!st.settings.v2) { st.settings.theme = 'dark'; st.settings.v2 = true; }
+      return st;
+    }
   } catch (e) { /* ignore */ }
   return blank();
 }
 function blank() {
-  return { srs: {}, kana: {}, lessons: {}, xp: 0, xpDay: {}, history: {}, newDay: { date: '', count: 0 }, settings: { ...DEFAULT_SETTINGS } };
+  return { srs: {}, kana: {}, lessons: {}, xp: 0, xpDay: {}, history: {}, newDay: { date: '', count: 0 }, settings: { ...DEFAULT_SETTINGS, v2: true } };
 }
 function save() { localStorage.setItem(KEY, JSON.stringify(state)); renderMini(); }
 const S = () => state.settings;
@@ -209,10 +214,11 @@ function route() {
   if ('speechSynthesis' in window) speechSynthesis.cancel();
   const [name, q] = location.hash.replace(/^#\//, '').split('?');
   const r = routes[name] ? name : 'home';
-  $$('#nav a').forEach(a => a.classList.toggle('active', a.dataset.r === r || (['study', 'lesson', 'guide'].includes(r) && a.dataset.r === 'home') || (r === 'kanaquiz' && a.dataset.r === 'kana')));
+  $$('#nav a').forEach(a => a.toggleAttribute('aria-current', a.dataset.r === tabRoute(r)));
   view.innerHTML = '';
   view.className = 'fade-in';
   routes[r](new URLSearchParams(q || ''));
+  if (window.__tabSync) window.__tabSync(true);
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', route);
@@ -736,8 +742,82 @@ function viewSettings() {
   };
 }
 
+// ===== 分頁列：可拖曳的玻璃膠囊（互動同 Stock Tracker）=====
+// 按住整條列 → 膠囊變透鏡、可左右拖，最靠近的分頁亮起；放開時膠囊滑到該分頁並切換。
+const TAB_ALIAS = { study: 'home', lesson: 'home', guide: 'home', kanaquiz: 'kana' };
+function tabRoute(r) { return TAB_ALIAS[r] || r; }
+function setupTabbar() {
+  const bar = $('#nav'); if (!bar) return;
+  const tabs = $$('a.tab', bar);
+  const cap = document.createElement('span'); cap.className = 'tabcap'; bar.prepend(cap);
+  const curIdx = () => {
+    const r = location.hash.replace(/^#\//, '').split('?')[0];
+    return Math.max(0, tabs.findIndex(t => t.dataset.r === tabRoute(routes[r] ? r : 'home')));
+  };
+  let rest = null, over = 0, dragging = false, settling = false, timer = 0;
+  const measure = () => {
+    if (bar.classList.contains('press') || !bar.offsetWidth) return;
+    const br = bar.getBoundingClientRect();
+    rest = tabs.map(t => { const r = t.getBoundingClientRect(); return { w: r.width, h: r.height, t: r.top - br.top, l: r.left - br.left }; });
+  };
+  const setCap = (w, h, t, l) => Object.assign(cap.style, { width: w + 'px', height: h + 'px', top: t + 'px', left: l + 'px' });
+  const place = (i, anim) => {
+    if (!rest) measure();
+    const g = rest && rest[i]; if (!g) return;
+    cap.classList.toggle('drag', !anim);
+    const w = g.w + 16; setCap(w, g.h + 8, g.t - 4, g.l + g.w / 2 - w / 2);
+  };
+  const lens = () => { const g = rest[0]; return { w: g.w + 38, h: g.h + 29, t: g.t - 13 }; };
+  const nearest = x => { let best = 0, bd = 1e9; tabs.forEach((t, k) => { const r = t.getBoundingClientRect(), d = Math.abs(x - (r.left + r.width / 2)); if (d < bd) { bd = d; best = k; } }); return best; };
+  const hl = i => tabs.forEach((t, k) => t.classList.toggle('hl', k === i));
+  const grow = i => {
+    const br = bar.getBoundingClientRect(), r = tabs[i].getBoundingClientRect(), z = lens();
+    const L = r.left + r.width / 2 - br.left - z.w / 2; setCap(z.w, z.h, z.t, L); return L;
+  };
+  const follow = x => {
+    const br = bar.getBoundingClientRect(), z = lens();
+    const r1 = tabs[0].getBoundingClientRect(), rN = tabs[tabs.length - 1].getBoundingClientRect();
+    const cx = Math.max(r1.left + r1.width / 2 - br.left, Math.min(rN.left + rN.width / 2 - br.left, x - br.left));
+    cap.classList.add('drag'); setCap(z.w, z.h, z.t, cx - z.w / 2);
+    const o = nearest(x); if (o !== over) { over = o; hl(o); }
+  };
+  const down = e => {
+    if (e.button) return;
+    if (!rest) measure();
+    if (!rest) return;
+    dragging = true; over = nearest(e.clientX);
+    cap.classList.add('grab'); cap.classList.remove('drag'); bar.classList.add('press');
+    grow(over); hl(over);
+    try { bar.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+  };
+  const up = () => {
+    if (!dragging) return;
+    dragging = false;
+    const t = over; hl(t); cap.classList.remove('drag');
+    const before = cap.offsetLeft, L = grow(t);
+    settling = true; clearTimeout(timer);
+    timer = setTimeout(() => { settling = false; cap.classList.remove('grab'); bar.classList.remove('press'); place(t, true); }, Math.abs(L - before) > 2 ? 175 : 100);
+    const href = tabs[t].getAttribute('href');
+    if (location.hash !== href) setTimeout(() => { location.hash = href; }, 60);
+  };
+  bar.addEventListener('pointerdown', down);
+  bar.addEventListener('pointermove', e => { if (!dragging) return; follow(e.clientX); if (e.cancelable) e.preventDefault(); });
+  bar.addEventListener('pointerup', up);
+  bar.addEventListener('pointercancel', up);
+  // 導覽由放開手指決定；鍵盤（Enter）觸發的 click 照常切換
+  tabs.forEach(t => t.addEventListener('click', e => { e.preventDefault(); if (e.detail === 0) location.hash = t.getAttribute('href'); }));
+  addEventListener('resize', () => { rest = null; measure(); place(curIdx(), false); hl(curIdx()); });
+  window.__tabSync = anim => {
+    if (settling) return;
+    if (!rest || !rest[0].w) { rest = null; measure(); }
+    const i = curIdx(); place(i, anim !== false); hl(i);
+  };
+  requestAnimationFrame(() => { measure(); place(curIdx(), false); hl(curIdx()); });
+}
+
 // ===== 啟動 =====
 applyTheme();
 renderMini();
+setupTabbar();
 route();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});

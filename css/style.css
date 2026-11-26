@@ -111,33 +111,65 @@ a { color: var(--accent); }
   font-size: 13px; font-weight: 600; box-shadow: var(--shadow-sm); white-space: nowrap;
 }
 
+/* 浮動玻璃膠囊分頁列（同 Stock Tracker）：
+   只顯示圖示；目前分頁下有一顆玻璃膠囊。按住整條列 → 列微微放大、膠囊變成透鏡，
+   可以左右拖到想去的分頁，放開就切換。置中不用 transform（iOS 上會讓毛玻璃失效）。 */
 .tabbar {
-  position: fixed; left: 0; right: 0; margin: 0 auto; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 60;
-  display: flex; gap: 4px; padding: 5px; width: min(480px, calc(100vw - 24px));
-  border-radius: 999px; border: 1px solid rgba(216,226,236,.9);
-  background: rgba(245,248,251,.82);
+  --press: .22s; --ease: cubic-bezier(.32,.72,0,1);
+  --bargrp: min(420px, calc(100vw - 36px)); --barbot: calc(10px + env(safe-area-inset-bottom, 0px));
+  position: fixed; z-index: 60; bottom: var(--barbot); left: calc(50% - var(--bargrp) / 2); width: var(--bargrp);
+  display: flex; gap: 0; padding: 8px 13px; border-radius: 999px; touch-action: none; user-select: none; -webkit-user-select: none;
+  transition: width var(--press) var(--ease), left var(--press) var(--ease), bottom var(--press) var(--ease), padding var(--press) var(--ease);
+  border: 1px solid rgba(216,226,236,.9); background: rgba(245,248,251,.9);
   -webkit-backdrop-filter: blur(16px) saturate(2); backdrop-filter: blur(16px) saturate(2);
   box-shadow: 0 10px 30px rgba(30,60,100,.14), 0 2px 6px rgba(30,60,100,.07),
     inset 0 0 0 1px rgba(255,255,255,.3), inset 0 1.5px 0 rgba(255,255,255,.95),
     inset 3px 4px 10px -6px rgba(255,255,255,.95), inset -3px -4px 10px -7px rgba(255,255,255,.55),
     inset 0 -1.5px 3px -1px rgba(70,95,125,.26);
 }
-[data-theme="dark"] .tabbar {
-  background: rgba(22,30,46,.72); border-color: rgba(255,255,255,.12);
-  box-shadow: 0 16px 48px rgba(0,0,0,.55), inset 0 1px 0.5px rgba(255,255,255,.35), inset 0 -1.5px 3px -1px rgba(0,0,0,.4);
-}
+.tabbar.press { width: calc(var(--bargrp) + 12px); left: calc(50% - (var(--bargrp) + 12px) / 2); bottom: calc(var(--barbot) - 1.5px); padding: 8.7px 13px; }
 .tabbar a.tab {
-  flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 1px;
-  padding: 7px 2px 6px; border-radius: 999px; text-decoration: none; color: #51606f; font-size: 10.5px; font-weight: 600;
-  transition: color .15s, background .2s; -webkit-user-drag: none; user-select: none;
+  position: relative; z-index: 1; flex: 1 1 0; min-width: 0; display: flex; justify-content: center; align-items: center;
+  padding: 6px 4px; border-radius: 999px; text-decoration: none; -webkit-user-drag: none; -webkit-touch-callout: none;
 }
-[data-theme="dark"] .tabbar a.tab { color: #a9b6c6; }
-.tabbar a.tab .ic { width: 26px; height: 26px; display: block; }
+.tabbar a.tab:focus:not(:focus-visible) { outline: none; }
+.tabbar a.tab .lb { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.tabbar a.tab .ic { display: block; width: 30px; height: 30px; color: #51606f; opacity: .8; transition: color .16s, opacity .18s, width var(--press) var(--ease), height var(--press) var(--ease); }
 .tabbar a.tab .ic svg { width: 100%; height: 100%; display: block; }
-.tabbar a.tab.active { color: var(--amber); background: rgba(255,255,255,.78);
-  box-shadow: 0 2px 8px rgba(30,60,100,.12), inset 0 1px 0 #fff, inset 0 -1px 2px rgba(70,95,125,.15); }
-[data-theme="dark"] .tabbar a.tab.active { background: rgba(255,255,255,.12); box-shadow: inset 0 1px 0.5px rgba(255,255,255,.35); }
-.tabbar a.tab.active .ic { filter: drop-shadow(0 2px 8px rgba(232,168,60,.45)); }
+.tabbar.press a.tab .ic { width: 32px; height: 32px; }
+.tabbar a.tab.hl .ic { opacity: 1; color: var(--amber); }
+.tabbar .tabcap {
+  position: absolute; z-index: 0; top: 6px; left: 6px; pointer-events: none; margin: -1px 0 0 -1px; border-radius: 999px;
+  transition: left .35s var(--ease), top var(--press) var(--ease), width var(--press) var(--ease), height var(--press) var(--ease);
+}
+.tabbar .tabcap.drag { transition: left 0s, top var(--press) var(--ease), width var(--press) var(--ease), height var(--press) var(--ease); }
+.tabbar .tabcap::before, .tabbar .tabcap::after { content: ""; position: absolute; inset: 0; border-radius: inherit; transition: opacity var(--press) var(--ease); }
+/* 靜止：霧面膠囊 */
+.tabbar .tabcap::before { opacity: 1;
+  background: linear-gradient(rgba(255,255,255,.62), rgba(255,255,255,.18)), rgba(196,208,220,.55);
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,.9), inset 0 0 0 1px rgba(255,255,255,.45), inset 0 -1px 2px -1px rgba(70,95,125,.18), 0 2px 8px -3px rgba(90,105,120,.3); }
+/* 按住：透鏡（中心透明、邊緣色散） */
+.tabbar .tabcap::after { opacity: 0;
+  background: radial-gradient(closest-side, rgba(255,255,255,0) 58%, rgba(120,140,165,.1) 84%, rgba(120,140,165,.24) 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.9), inset 0 2px 2.5px -1px rgba(46,190,225,.55), inset 2px 0 2.5px -1px rgba(228,163,32,.5),
+    inset -2px 0 2.5px -1px rgba(228,163,32,.5), inset 0 -2px 2.5px -1px rgba(104,92,214,.52), inset 0 1.5px 1px rgba(255,255,255,.75),
+    inset 0 -1px 2px -1px rgba(70,95,125,.28), 0 4px 14px -5px rgba(30,60,100,.35); }
+.tabbar .tabcap.grab::before { opacity: 0; }
+.tabbar .tabcap.grab::after { opacity: 1; }
+
+[data-theme="dark"] .tabbar {
+  border-color: rgba(255,255,255,.14); background: linear-gradient(180deg, rgba(40,50,70,.62), rgba(20,27,40,.72));
+  box-shadow: 0 16px 48px rgba(0,0,0,.55), inset 0 1px 0.5px rgba(255,255,255,.45), inset 0 0 0 1px rgba(255,255,255,.04), inset 0 -1.5px 3px -1px rgba(0,0,0,.45);
+}
+[data-theme="dark"] .tabbar a.tab .ic { color: #a9b6c6; }
+[data-theme="dark"] .tabbar a.tab.hl .ic { color: var(--amber); }
+[data-theme="dark"] .tabbar .tabcap::before {
+  background: linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,.06)), rgba(120,140,170,.18);
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,.35), inset 0 0 0 1px rgba(255,255,255,.12), inset 0 -1px 2px -1px rgba(0,0,0,.4), 0 2px 8px -3px rgba(0,0,0,.6); }
+[data-theme="dark"] .tabbar .tabcap::after {
+  background: radial-gradient(closest-side, rgba(255,255,255,0) 58%, rgba(200,215,235,.06) 84%, rgba(200,215,235,.16) 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.45), inset 0 2px 2.5px -1px rgba(46,190,225,.6), inset 2px 0 2.5px -1px rgba(228,163,32,.55),
+    inset -2px 0 2.5px -1px rgba(228,163,32,.55), inset 0 -2px 2.5px -1px rgba(124,112,234,.6), inset 0 1.5px 1px rgba(255,255,255,.4), 0 4px 14px -5px rgba(0,0,0,.6); }
 body.in-session .tabbar, body.in-session .brandbar { display: none; }
 
 /* 進階：SVG 位移折射（Chrome 支援，其他瀏覽器保留毛玻璃） */
