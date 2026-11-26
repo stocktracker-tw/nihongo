@@ -38,7 +38,7 @@
 | Tofugu | 平假名記憶口訣 |
 | 手寫練習 | 每個假名都有描字畫板 |
 
-另外還有：系統日文語音朗讀、振假名、深色無印良品色調 liquid glass 介面、鍵盤快捷鍵（1–4 選答案、Enter 確認、Space 翻卡）。
+另外還有：Azure 真人感日文發音、振假名、深色無印良品色調 liquid glass 介面、鍵盤快捷鍵（1–4 選答案、Enter 確認、Space 翻卡）。
 
 課程內容在 [`js/course.js`](js/course.js)，單字庫與文法在 [`js/data.js`](js/data.js)，照格式新增即可擴充。
 
@@ -55,6 +55,19 @@ git push -u origin main
 
 到 repo 的 **Settings → Pages**，Source 選 `main` 分支、`/ (root)`，幾分鐘後網址就是 `https://<你的帳號>.github.io/nihongo/`。
 
+## 發音檔（Azure 語音）
+
+發音檔放在 `audio/`，檔名是文字的雜湊值，`audio/index.json` 是清單。新增課程、單字或句子之後要重新產生：
+
+1. 用瀏覽器打開 `tools/collect.html`（要透過本機伺服器，例如 `python -m http.server`），按「下載 texts.json」，放到 `tools/`。
+2. 設定環境變數 `AZURE_SPEECH_KEY`、`AZURE_SPEECH_REGION`，然後執行：
+
+```powershell
+python tools/gen_audio.py
+```
+
+只會產生缺少的檔案，清單裡已經沒有的舊檔會被刪掉。金鑰只在你的電腦上使用，不會寫進任何檔案或網頁。
+
 ## 本機執行
 
 直接用瀏覽器開 `index.html` 就能用（離線快取只在 http/https 下啟用）。或者：
@@ -67,4 +80,4 @@ python -m http.server 8000
 
 - 學習進度只存在瀏覽器的 localStorage，不會上傳；換瀏覽器或清除網站資料就會從頭開始。
 - 沒有設定頁：固定深色無印良品色調的 liquid glass 介面、顯示振假名、作答後自動發音、每日小目標 50 XP。
-- 發音使用作業系統的日文語音。Windows 可到「設定 → 時間與語言 → 語音」加裝日文語音；iOS / Android 通常已內建。
+- 發音是 Azure 語音 Nanami HD（ja-JP-Nanami:DragonHDLatestNeural，調成成熟的大姊姊聲線）預先產生的 mp3，每台裝置聽到的都一樣；播過一次就會存進離線快取。少數不在清單裡的文字才會改用裝置內建語音。

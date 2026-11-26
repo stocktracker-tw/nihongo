@@ -383,3 +383,99 @@ a.btn, a.chip, a.icon-btn { text-decoration: none; display: inline-block; color:
   .card { padding: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+
+/* =====================================================================
+   美化（v2）：圖示、標題層級、首頁數據列、聽力按鈕、細節
+   ===================================================================== */
+::selection { background: rgba(214,180,131,.35); color: #fff; }
+html { scrollbar-color: rgba(236,226,208,.18) transparent; scrollbar-width: thin; }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 12px; }
+body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+.jp, .prompt-word, .tile, .choice.jp, .kana-cell .k, .example .ja { font-feature-settings: "palt"; }
+.num, .big, .brandstat, .unit-no, .head-stats { font-variant-numeric: tabular-nums; }
+
+/* 圖示 */
+.ico { width: 1.15em; height: 1.15em; display: inline-block; vertical-align: -.2em; flex-shrink: 0; }
+.icon-btn .ico { width: 20px; height: 20px; }
+.brandstat span { display: inline-flex; align-items: center; gap: 5px; }
+.brandstat .ico { width: 15px; height: 15px; color: var(--amber); opacity: .9; }
+.guide-btn { display: inline-flex !important; align-items: center; gap: 6px; }
+.hint { display: flex; gap: 8px; align-items: flex-start; justify-content: center; color: var(--ink-2); margin: 10px 0; }
+.hint .ico { color: var(--amber); margin-top: .15em; }
+
+/* 標題層級 */
+h1 { font-size: clamp(24px, 4vw, 30px); font-weight: 800; letter-spacing: .01em; }
+.sub { font-size: 15px; max-width: 60ch; }
+.card h2, .result h1 { border-left: 0; padding-left: 0; }
+.card h2 { margin-top: 4px; }
+
+/* 首頁：問候＋數據列 */
+.path-head { gap: 20px; padding: 22px; }
+.bubble { line-height: 1.55; }
+.head-stats {
+  display: grid; grid-template-columns: auto repeat(3, minmax(0, 1fr)); gap: 0; align-items: stretch;
+  border-radius: 18px; background: rgba(0,0,0,.18); border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.3);
+}
+.head-stats > .stat { padding: 12px 16px; justify-content: center; gap: 3px; }
+.head-stats > .stat + .stat { border-left: 1px solid var(--line); }
+.head-stats .num { font-size: 22px; line-height: 1.1; }
+.head-stats .lbl { font-size: 12px; letter-spacing: .04em; }
+.head-stats .bar { margin-top: 4px; height: 5px; }
+.wd { width: 24px; height: 24px; font-size: 11.5px; }
+@media (max-width: 600px) {
+  .head-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .head-stats > .stat:first-child { grid-column: 1 / -1; border-bottom: 1px solid var(--line); align-items: center; }
+  .head-stats > .stat:nth-child(2) { border-left: 0; }
+  .mascot-row .mascot { width: 64px; height: 64px; }
+}
+
+/* 單元標題列：大號編號浮水印 */
+.unit-banner { overflow: hidden; min-height: 96px; }
+.unit-banner::before {
+  content: attr(data-no); position: absolute; right: 150px; bottom: -28px; font-size: 120px; font-weight: 800; line-height: 1;
+  color: rgba(255,248,236,.09); letter-spacing: -.04em; pointer-events: none;
+}
+@media (max-width: 600px) { .unit-banner::before { right: 110px; font-size: 96px; } }
+.unit-title { font-size: 23px; letter-spacing: .02em; }
+
+/* 路徑：關卡之間的淡淡連線感 */
+.nodes { position: relative; }
+.node { font-weight: 600; }
+.node-label { letter-spacing: .04em; }
+
+/* 聽力按鈕：圓形播放鍵 */
+.listen {
+  display: inline-flex; flex-direction: column; align-items: center; gap: 8px; border: 0; background: none; color: var(--ink-2); font-size: 13px; font-weight: 600;
+}
+.listen .ico {
+  width: 76px; height: 76px; padding: 22px; border-radius: 50%; color: #fff; box-sizing: border-box;
+  background: radial-gradient(circle at 35% 25%, rgba(255,244,226,.45), transparent 55%), linear-gradient(180deg, #b89670, #8e714b);
+  box-shadow: 0 10px 26px rgba(142,113,75,.35), inset 0 1px 0 rgba(255,244,226,.5), 0 0 0 8px rgba(214,180,131,.08);
+  transition: transform .12s, box-shadow .2s;
+}
+.listen:hover .ico { box-shadow: 0 12px 30px rgba(142,113,75,.45), inset 0 1px 0 rgba(255,244,226,.5), 0 0 0 12px rgba(214,180,131,.1); }
+.listen:active .ico { transform: scale(.94); }
+
+/* 練習畫面 */
+.session-top .bar { height: 10px; background: rgba(0,0,0,.25); }
+.session-top .bar > i { box-shadow: 0 0 12px rgba(156,185,140,.45), inset 0 1px 0 rgba(255,255,255,.35); }
+.prompt-card { padding: 38px 22px 34px; }
+.prompt-label { font-size: 12.5px; letter-spacing: .12em; }
+.choice { line-height: 1.35; }
+.feedback { backdrop-filter: none; }
+.result .mascot { margin-bottom: 8px; }
+.result .grid-4 { grid-template-columns: repeat(3, 1fr); max-width: 420px; margin-left: auto !important; margin-right: auto !important; }
+.result .stat .lbl { letter-spacing: .04em; }
+
+/* 清單類頁面 */
+.vocab-table td { padding: 12px 10px; }
+.vocab-table tbody tr { transition: background .15s; }
+.grammar-item { padding: 16px 20px !important; }
+.grammar-item .gt { font-size: 17px; }
+.struct { font-weight: 600; letter-spacing: .02em; }
+.kana-cell .k { font-weight: 500; }
+.choice { position: relative; }
+.choice .kbd { position: absolute; top: 8px; right: 10px; margin: 0; }
+.btn .kbd { margin-left: 8px; }

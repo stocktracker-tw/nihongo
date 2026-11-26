@@ -149,6 +149,17 @@ function bindIME(input) {
 const normKana = s => toHiragana(romajiToKana(s.trim(), true)).replace(/[\s。、.,!?！？]/g, '');
 
 // ===== 語音 =====
+// 主要：Azure Neural TTS（Nanami HD，大姊姊聲線）預先產生的 mp3，放在 audio/<雜湊>.mp3。
+// 清單外的文字或檔案載入失敗時，才退回裝置內建的語音合成。
+// 產生方式見 tools/gen_audio.py；網頁不含任何 Azure 金鑰。
+function speechHash(s) { // FNV-1a 32 位元，和 tools/gen_audio.py 相同
+  let h = 0x811c9dc5;
+  for (const ch of s) { h ^= ch.codePointAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16).padStart(8, '0');
+}
+let audioIndex = null;      // Set<雜湊>，載入前為 null
+fetch('audio/index.json').then(r => r.ok ? r.json() : []).then(list => { audioIndex = new Set(list); }).catch(() => { audioIndex = new Set(); });
+let curAudio = null;
 let jaVoice = null;
 function loadVoices() {
   if (!('speechSynthesis' in window)) return;
@@ -156,13 +167,29 @@ function loadVoices() {
   jaVoice = vs.find(v => /Google|Nanami|Kyoko|Otoya|Natural/i.test(v.name)) || vs[0] || null;
 }
 if ('speechSynthesis' in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
-function speak(text) {
+function stopSpeech() {
+  if (curAudio) { curAudio.pause(); curAudio = null; }
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+}
+function speakDevice(text) {
   if (!('speechSynthesis' in window)) { toast('此瀏覽器不支援語音'); return; }
-  speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'ja-JP'; u.rate = S().rate;
   if (jaVoice) u.voice = jaVoice;
   speechSynthesis.speak(u);
+}
+function speak(text) {
+  text = String(text).trim();
+  if (!text) return;
+  stopSpeech();
+  const h = speechHash(text);
+  if (audioIndex && !audioIndex.has(h)) return speakDevice(text);
+  const a = new Audio(`audio/${h}.mp3`);
+  curAudio = a;
+  let fell = false;
+  const fallback = () => { if (fell || curAudio !== a) return; fell = true; curAudio = null; speakDevice(text); };
+  a.onerror = fallback;
+  a.play().catch(err => { if (err && err.name !== 'AbortError') fallback(); });
 }
 
 // ===== 共用 UI =====
@@ -182,7 +209,20 @@ function ruby(word, reading, force) {
   if (word === reading || (!S().furigana && !force)) return esc(word);
   return `<ruby>${esc(word)}<rt>${esc(reading)}</rt></ruby>`;
 }
-const audioBtn = text => `<button class="icon-btn" data-say="${esc(text)}" title="播放發音">🔊</button>`;
+
+// ===== 線條圖示（取代 emoji，和分頁列一致）=====
+const ICONS = {
+  speaker: '<path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/>',
+  book: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  star: '<path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.6L12 16.5l-5.1 2.7 1-5.6-4.1-4 5.7-.8z"/>',
+  cards: '<rect x="3.5" y="6.5" width="13" height="14" rx="2.5"/><path d="M7.5 3.5h10.5A2.5 2.5 0 0 1 20.5 6v11"/>',
+  x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  bulb: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/>',
+};
+const ico = (name, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+const listenBtn = text => `<button class="listen" data-say="${esc(text)}" aria-label="再聽一次">${ico('speaker')}<span>再聽一次</span></button>`;
+const audioBtn = text => `<button class="icon-btn" data-say="${esc(text)}" title="播放發音" aria-label="播放發音">${ico('speaker')}</button>`;
 view.addEventListener('click', e => {
   const b = e.target.closest('[data-say]');
   if (b) { e.stopPropagation(); speak(b.dataset.say); }
@@ -192,7 +232,7 @@ function applyTheme() { document.documentElement.dataset.theme = 'dark'; }
 
 function renderMini() {
   const el = $('#miniStats');
-  if (el) el.innerHTML = `<span title="累積學習天數">📅 ${totalDays()}</span><span title="總 XP">⭐ ${state.xp}</span><span title="待複習">📚 ${dueIds().length}</span>`;
+  if (el) el.innerHTML = `<span title="累積學習天數">${ico('calendar')}${totalDays()}</span><span title="總 XP">${ico('star')}${state.xp}</span><span title="待複習">${ico('cards')}${dueIds().length}</span>`;
 }
 
 // ===== 路由 =====
@@ -201,7 +241,7 @@ function route() {
   keyHandler = null;
   gentleRetry = false;
   document.body.classList.remove('in-session');
-  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  stopSpeech();
   const [name, q] = location.hash.replace(/^#\//, '').split('?');
   const r = routes[name] ? name : 'home';
   $$('#nav a').forEach(a => a.toggleAttribute('aria-current', a.dataset.r === tabRoute(r)));
@@ -263,7 +303,7 @@ function showKanaDetail(k, r, h, type) {
       <div style="text-align:center">
         <div class="big-kana">${k}</div>
         <div style="font-size:22px;font-weight:700">${r}</div>
-        ${mn ? `<p class="muted">💡 ${esc(mn)}</p>` : ''}
+        ${mn ? `<p class="hint">${ico('bulb')}${esc(mn)}</p>` : ''}
         <p class="small muted">測驗紀錄：答對 ${st.c} · 答錯 ${st.w}</p>
         <div class="row" style="justify-content:center">${audioBtn(k)}<button class="btn" id="closeDetail">關閉</button></div>
       </div>
@@ -348,7 +388,7 @@ function viewKanaQuiz(q) {
       askChoice(stage, { label: '選出對應的假名', prompt: `<div class="prompt-word" style="font-family:var(--ui)">${r}</div>`, options: opts.map(o => o[0]), answer: opts.findIndex(o => o[0] === k), jp: true, detail, say: k }, record, next);
     } else {
       const opts = shuffle([[k, r], ...distract()]);
-      askChoice(stage, { label: '聽音選字', prompt: `<button class="btn indigo big" data-say="${k}">🔊 再聽一次</button>`, options: opts.map(o => o[0]), answer: opts.findIndex(o => o[0] === k), jp: true, detail, autoSay: k }, record, next);
+      askChoice(stage, { label: '聽音選字', prompt: `${listenBtn(k)}`, options: opts.map(o => o[0]), answer: opts.findIndex(o => o[0] === k), jp: true, detail, autoSay: k }, record, next);
     }
   };
   step();
@@ -362,7 +402,7 @@ function sessionShell(progress, hearts, exitHref) {
   view.innerHTML = `
     <div class="session">
       <div class="session-top">
-        <a class="icon-btn" href="${exitHref}" title="離開" style="text-decoration:none">✕</a>
+        <a class="icon-btn" href="${exitHref}" title="離開" aria-label="離開">${ico('x')}</a>
         <div class="bar"><i style="width:${Math.round(progress * 100)}%"></i></div>
       </div>
       <div id="stage" class="fade-in"></div>
@@ -457,12 +497,12 @@ function showResult({ title, correct, total, xp, again, back }) {
   const acc = total ? Math.round(correct / total * 100) : 0;
   view.innerHTML = `
     <div class="session"><div class="card result fade-in">
-      <div class="emoji">${acc >= 90 ? '🏆' : acc >= 60 ? '🎉' : '💪'}</div>
+      ${mascot(110, 'happy')}
       <h1>${title}</h1>
       <div class="grid grid-4" style="margin:24px 0">
         <div class="stat"><span class="big">${acc}%</span><span class="lbl">正確率</span></div>
         <div class="stat"><span class="big">+${xp}</span><span class="lbl">XP</span></div>
-        <div class="stat"><span class="big">📅${totalDays()}</span><span class="lbl">累積學習天數</span></div>
+        <div class="stat"><span class="big">${totalDays()}</span><span class="lbl">累積學習天數</span></div>
       </div>
       <div class="row" style="justify-content:center">
         ${again ? `<button class="btn" id="again">再來一次</button>` : ''}
@@ -544,7 +584,7 @@ function askVocab(stage, v, easy, result, next) {
     askChoice(stage, { label: `${tag} 選出意思`, prompt: `<div class="prompt-word">${ruby(v.word, v.reading)}</div>`, options: opts.map(o => o.meaning), answer: opts.indexOf(v), detail: vocabDetail(v), say: v.reading }, ok => result(ok), next);
   } else if (t === 'listen') {
     const opts = shuffle([v, ...distractVocab(v, 'word')]);
-    askChoice(stage, { label: `${tag} 聽力：選出聽到的單字`, prompt: `<button class="btn indigo big" data-say="${esc(v.reading)}">🔊 再聽一次</button>`, options: opts.map(o => o.word), answer: opts.indexOf(v), jp: true, detail: vocabDetail(v), autoSay: v.reading }, ok => result(ok), next);
+    askChoice(stage, { label: `${tag} 聽力：選出聽到的單字`, prompt: `${listenBtn(v.reading)}`, options: opts.map(o => o.word), answer: opts.indexOf(v), jp: true, detail: vocabDetail(v), autoSay: v.reading }, ok => result(ok), next);
   } else if (t === 'recall') {
     askType(stage, { label: `${tag} 用日文怎麼說？（輸入讀音）`, prompt: `<div class="prompt-meaning" style="font-size:30px">${esc(v.meaning)}</div><div class="small muted" style="margin-top:6px">${esc(v.cat)}</div>`, ime: true,
       check: val => normKana(val) === normKana(v.reading) || val.trim() === v.word, detail: vocabDetail(v), say: v.reading }, ok => result(ok), next);
@@ -645,7 +685,7 @@ function viewChallenge() {
   const gPool = GRAMMAR.filter(g => state.srs[g.id]);
   const builders = [
     () => { const v = pick(pool); const o = shuffle([v, ...distractVocab(v, 'meaning')]); return (st, r, n) => askChoice(st, { label: '選出意思', prompt: `<div class="prompt-word">${ruby(v.word, v.reading)}</div>`, options: o.map(x => x.meaning), answer: o.indexOf(v), detail: vocabDetail(v), say: v.reading }, r, n); },
-    () => { const v = pick(pool); const o = shuffle([v, ...distractVocab(v, 'word')]); return (st, r, n) => askChoice(st, { label: '聽力', prompt: `<button class="btn indigo big" data-say="${esc(v.reading)}">🔊 再聽一次</button>`, options: o.map(x => x.word), answer: o.indexOf(v), jp: true, detail: vocabDetail(v), autoSay: v.reading }, r, n); },
+    () => { const v = pick(pool); const o = shuffle([v, ...distractVocab(v, 'word')]); return (st, r, n) => askChoice(st, { label: '聽力', prompt: `${listenBtn(v.reading)}`, options: o.map(x => x.word), answer: o.indexOf(v), jp: true, detail: vocabDetail(v), autoSay: v.reading }, r, n); },
     () => { const v = pick(pool); return (st, r, n) => askType(st, { label: '翻譯成日文', prompt: `<div class="prompt-meaning" style="font-size:30px">${esc(v.meaning)}</div>`, ime: true, check: x => normKana(x) === normKana(v.reading) || x.trim() === v.word, detail: vocabDetail(v), say: v.reading }, r, n); },
     () => { const [tokens, zh] = pick(SENTENCES); const extra = pick(SENTENCES.filter(s => s[1] !== zh))[0]; const d = extra.find(t => !tokens.includes(t)); return (st, r, n) => askTiles(st, { label: '排出正確的句子', zh, tiles: d ? [...tokens, d] : tokens, correct: tokens }, r, n); },
     () => { const g = pick(gPool.length ? gPool : GRAMMAR.slice(0, 8)); return (st, r, n) => askCloze(st, g, r, n); },
@@ -655,7 +695,7 @@ function viewChallenge() {
   const step = () => {
     if (idx >= qs.length) return showResult({ title: '練習完成！', correct, total: qs.length, xp, again: '#/challenge', back: '#/home' });
     const stage = sessionShell(idx / qs.length, null, '#/home');
-    if (combo >= 3) stage.insertAdjacentHTML('beforebegin', `<div class="tag" style="margin-bottom:10px">✨ 連續答對 ${combo} 題</div>`);
+    if (combo >= 3) stage.insertAdjacentHTML('beforebegin', `<div class="tag" style="margin-bottom:10px">連續答對 ${combo} 題</div>`);
     qs[idx](stage, ok => {
       if (ok) { combo++; const g = 5 + Math.min(combo, 5); correct++; xp += g; addXP(g); }
       else { combo = 0; addXP(1); xp += 1; }

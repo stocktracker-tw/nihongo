@@ -65,7 +65,7 @@ function viewPath() {
       <div class="mascot-row">${mascot(84)}<div class="bubble">${greeting()}</div></div>
       <div class="head-stats">
         <div class="stat"><div class="week">${weekDays().map(d => `<span class="wd ${d.active ? 'on' : ''} ${d.today ? 'today' : ''}" title="${d.active ? '有學習' : ''}">${d.label}</span>`).join('')}</div><span class="lbl">本週學習日</span></div>
-        <div class="stat"><span class="num">${totalDays()}</span><span class="lbl">累積學習天數</span></div>
+        <div class="stat"><span class="num">${totalDays()}</span><span class="lbl">學習天數</span></div>
         <div class="stat"><span class="num">${state.xp}</span><span class="lbl">總 XP</span></div>
         ${goal ? `<div class="stat"><span class="num">${xpToday}<small class="muted" style="font-size:14px"> / ${goal}</small></span><span class="lbl">今日小目標</span><div class="bar"><i style="width:${Math.min(100, xpToday / goal * 100)}%"></i></div></div>` : ''}
       </div>
@@ -104,9 +104,9 @@ function unitSection(u, ui, nx) {
       <button class="node ${d ? 'done' : ''} ${cur ? 'current' : ''} ${review ? 'review' : ''}" data-u="${ui}" data-l="${li}" title="${review ? '單元複習' : '第 ' + (li + 1) + ' 課'}">${icon}</button></div>`;
   }).join('');
   return `<section class="unit" style="--c:${color}">
-    <div class="unit-banner">
+    <div class="unit-banner" data-no="${String(ui + 1).padStart(2, '0')}">
       <div><div class="unit-no">第 ${ui + 1} 單元 · ${doneCount}/${n}</div><div class="unit-title">${esc(u.title)}</div><div class="unit-desc">${esc(u.desc)}</div></div>
-      <a class="btn guide-btn" href="#/guide?u=${ui}">📖 指南</a>
+      <a class="btn guide-btn" href="#/guide?u=${ui}">${ico('book')}指南</a>
     </div>
     <div class="nodes">${nodes}</div></section>`;
 }
@@ -255,7 +255,7 @@ function exMeaning(w, pool) {
 }
 function exListen(w, pool) {
   const opts = shuffle([w, ...otherWords(w, pool, 3)]);
-  return (st, r, n) => askChoice(st, { label: '聽聽看，選出聽到的字', prompt: `<button class="btn indigo big" data-say="${esc(w.reading)}">🔊 再聽一次</button>`, options: opts.map(o => o.word), jp: true, answer: opts.indexOf(w), detail: wordDetail(w), autoSay: w.reading }, r, n);
+  return (st, r, n) => askChoice(st, { label: '聽聽看，選出聽到的字', prompt: `${listenBtn(w.reading)}`, options: opts.map(o => o.word), jp: true, answer: opts.indexOf(w), detail: wordDetail(w), autoSay: w.reading }, r, n);
 }
 function exTypeWord(w) {
   return (st, r, n) => askType(st, { label: '用日文寫出來', prompt: `<div class="teach-emoji">${w.emoji}</div><div class="prompt-meaning">${esc(w.zh)}</div>`, ime: true,
@@ -276,7 +276,7 @@ function exZh2Jp(s, pool) {
 }
 function exListenTiles(s, pool) {
   const ans = s[1].split(' ');
-  return (st, r, n) => askTiles(st, { label: '聽寫：排出聽到的句子', prompt: `<button class="btn indigo big" data-say="${esc(s[0])}">🔊 再聽一次</button>`,
+  return (st, r, n) => askTiles(st, { label: '聽寫：排出聽到的句子', prompt: `${listenBtn(s[0])}`,
     tiles: [...ans, ...distractTokens(ans, pool, 1)], correct: ans, detail: `${esc(s[0])}<br>${esc(s[2])}`, say: s[0], autoSay: s[0] }, r, n);
 }
 function buildWordLesson(u, ui, li, replay) {
@@ -311,7 +311,7 @@ function exTeachKana(item, u) {
       <div class="card prompt-card"><span class="tag new">新假名</span>
         <div class="big-kana" style="margin-top:10px">${k}</div>
         <div style="font-size:24px;font-weight:700">${ro}</div>
-        ${mn ? `<p class="muted">💡 ${esc(mn)}</p>` : ''}
+        ${mn ? `<p class="hint">${ico('bulb')}${esc(mn)}</p>` : ''}
         <div>${audioBtn(k)}</div></div>
       <button class="btn primary big block" id="ok" style="margin-top:16px">記住了<span class="kbd">Enter</span></button>`;
     if (S().autoplay) speak(k);
@@ -334,7 +334,7 @@ function exKanaRomaji(item, pool) {
 }
 function exKanaListen(item, pool) {
   const opts = shuffle([item, ...kanaOthers(item, pool)]);
-  return (st, r, n) => askChoice(st, { label: '聽聽看，選出聽到的假名', prompt: `<button class="btn indigo big" data-say="${item[0]}">🔊 再聽一次</button>`, options: opts.map(o => o[0]), jp: true, answer: opts.indexOf(item), detail: `${item[0]} = ${item[1]}`, autoSay: item[0] }, trackKana(item[0], r), n);
+  return (st, r, n) => askChoice(st, { label: '聽聽看，選出聽到的假名', prompt: `${listenBtn(item[0])}`, options: opts.map(o => o[0]), jp: true, answer: opts.indexOf(item), detail: `${item[0]} = ${item[1]}`, autoSay: item[0] }, trackKana(item[0], r), n);
 }
 function exKanaType(item) {
   const [k, ro] = item;
