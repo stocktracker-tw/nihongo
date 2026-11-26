@@ -59,14 +59,19 @@ git push -u origin main
 
 發音檔放在 `audio/`，檔名是文字的雜湊值，`audio/index.json` 是清單。新增課程、單字或句子之後要重新產生：
 
-1. 用瀏覽器打開 `tools/collect.html`（要透過本機伺服器，例如 `python -m http.server`），按「下載 texts.json」，放到 `tools/`。
+1. 用瀏覽器打開 `tools/collect.html`（要透過本機伺服器，例如 `python -m http.server`），下載 `texts.json` 和 `hints.json`，放到 `tools/`。
 2. 設定環境變數 `AZURE_SPEECH_KEY`、`AZURE_SPEECH_REGION`，然後執行：
 
 ```powershell
 python tools/gen_audio.py
 ```
 
-只會產生缺少的檔案，清單裡已經沒有的舊檔會被刪掉。金鑰只在你的電腦上使用，不會寫進任何檔案或網頁。
+只會重做有變動的檔案：新文字、念法改了、或換了聲音。清單裡已經沒有的舊檔會被刪掉。金鑰只在你的電腦上使用，不會寫進任何檔案或網頁。
+
+念法怎麼決定（`tools/gen_audio.py`）：
+- 單字和文法例句送給 Azure 時用漢字寫法（`hints.json`），讓它分辨同音字、音調才對，例如 あめ→雨、はな→花、やさしい→易しい。讀音有歧義的漢字（數字、今日、人、年、何…）維持假名。
+- 單獨一個平假名改用片假名念，避免 は・へ・を 被念成助詞。
+- 容易念錯的漢字指定讀音：明日→あした、昨日→きのう、今→いま、行く→いく、私→わたし、九時→くじ 等。
 
 ## 本機執行
 

@@ -8,7 +8,7 @@
 讀 tools/texts.json（由 tools/collect.html 產生），輸出 audio/<雜湊>.mp3 與 audio/index.json。
 App 只會播放這些預先產生的 mp3；網頁裡完全不含 Azure 金鑰。
 """
-import json, os, sys, time, urllib.request, urllib.error
+import json, os, re, sys, time, urllib.request, urllib.error
 from xml.sax.saxutils import escape
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,8 +29,16 @@ WHOLE = {   # 整段完全相同才替換
 }
 PARTS = [   # 段落中出現就替換
     ('明日', 'あした'), ('昨日', 'きのう'), ('今日', 'きょう'), ('何ですか', 'なんですか'),
-    ('日本', 'にほん'), ('私', 'わたし'), ('上に', 'うえに'),
+    ('日本', 'にほん'), ('私', 'わたし'), ('上に', 'うえに'), ('一緒', 'いっしょ'),
+    ('九時', 'くじ'), ('四時', 'よじ'), ('七時', 'しちじ'), ('母と', 'ははと'), ('雨で', 'あめで'),
 ]
+REGEX = [
+    (re.compile(r'行(?=[かきくけこっ])'), 'い'),       # 行く系動詞念 い，不念 ゆ（不影響「銀行」）
+    (re.compile(r'今(?![日週年月朝晩])'), 'いま'),      # 單獨的「今」念 いま，不念 こん
+]
+# 漢字寫法提示（tools/hints.json，由 collect.html 產生）：假名 → 漢字，讓 Azure 判斷是哪個詞、音調才正確
+_hints_path = os.path.join(HERE, 'hints.json')
+HINTS = json.load(open(_hints_path, encoding='utf-8')) if os.path.exists(_hints_path) else {}
 
 
 def tts_text(t: str) -> str:
@@ -39,8 +47,11 @@ def tts_text(t: str) -> str:
     # 單一平假名（は・へ・を…）單獨念時會被當成助詞，改用同音的片假名
     if len(t) == 1 and 'ぁ' <= t <= 'ゖ':
         return chr(ord(t) + 0x60)
+    t = HINTS.get(t, t)
     for a, b in PARTS:
         t = t.replace(a, b)
+    for rx, b in REGEX:
+        t = rx.sub(b, t)
     return t
 
 

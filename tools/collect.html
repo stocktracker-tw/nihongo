@@ -5,8 +5,8 @@
 </head>
 <body>
   <h1>語音文字清單</h1>
-  <p>改了課程或單字後：下載 <code>texts.json</code> 放到 <code>tools/</code>，再執行 <code>python tools/gen_audio.py</code>。</p>
-  <p><button id="dl">下載 texts.json</button> <span id="n"></span></p>
+  <p>改了課程或單字後：下載 <code>texts.json</code> 和 <code>hints.json</code> 放到 <code>tools/</code>，再執行 <code>python tools/gen_audio.py</code>。</p>
+  <p><button id="dl">下載 texts.json</button> <button id="dlh">下載 hints.json</button> <span id="n"></span></p>
   <textarea id="out" readonly></textarea>
   <script src="../js/data.js"></script>
   <script src="../js/course.js"></script>
@@ -16,11 +16,13 @@
     const json = JSON.stringify(texts, null, 1);
     document.getElementById('out').value = json;
     document.getElementById('n').textContent = texts.length + ' 段文字';
-    document.getElementById('dl').onclick = () => {
+    const save = (name, data) => {
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
-      a.download = 'texts.json'; a.click();
+      a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+      a.download = name; a.click();
     };
+    document.getElementById('dl').onclick = () => save('texts.json', json);
+    document.getElementById('dlh').onclick = () => save('hints.json', JSON.stringify(collectSpeechHints(), null, 1));
   </script>
 </body>
 </html>
