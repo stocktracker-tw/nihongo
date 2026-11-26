@@ -38,6 +38,12 @@ JLPT N5～N1 共 8,027 個單字，每個都有中文意思和 Azure 發音。
 - **已掌握**：已經會的字直接標記，以後不再出現
 - 一輪結束後用**連連看**和**聽寫**鞏固
 - 可以查單字（漢字、假名、羅馬拼音、中文都能查）
+- **例句**：N5～N1 全部 8,027 個字都有一句例句（附中文翻譯和發音），翻卡時一起出現
+- **動詞變化**：動詞會列出ます形、て形、ない形、た形、可能、意向等變化
+- **批次管理**：在單字列表勾選多個字，一次標為已掌握、取消或重新學
+- **句子隨身聽**：把今天學的字、正在學的字或整本書連續播放（單字＋例句），可設定重複次數、隨機順序，鎖螢幕也能控制
+
+例句寫在 `tools/ex/*.tsv`（格式：`id<TAB>日文<TAB>中文`）。
 
 單字表來源：[open-anki-jlpt-decks](https://github.com/jamsinclair/open-anki-jlpt-decks)（MIT），原始資料 [tanos.co.uk](http://www.tanos.co.uk/jlpt/)（Jonathan Waller，CC BY）。原始檔在 `vendor/jlpt/`，中文釋義在 `tools/zh/`，用 `python -I tools/build_vocab.py` 產生 `data/jlpt/*.json`。
 

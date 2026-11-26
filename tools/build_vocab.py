@@ -17,8 +17,43 @@ KANJI = re.compile(r'[一-鿿々]')
 KANA = re.compile(r'^[぀-ヿー～・\s]+$')
 
 
+I_E = set('いきぎしじちぢにひびぴみりえけげせぜてでねへべぺめれ')
+# 結尾是 い／え段＋る，但其實是五段動詞的（依漢字寫法）
+GODAN_RU = set('帰る 入る 走る 知る 切る 要る 減る 限る 喋る 滑る 蹴る 散る 握る 参る 混じる 交じる 照る 練る 煎る 炒る 焦る '
+               '嘲る 覆る 遮る 茂る 湿る 罵る 陥る 翻る 蘇る 甦る 耽る 捻る 陰る 侮る 蔑む 契る 漲る 挫る 詰る 抉る 弄る 齧る 捩る '
+               'しゃべる いじる ける ねじる かじる せびる ちぎる'.split())
+
+
+def verb_type(w, rd, en):
+    """1＝一段、5＝五段、s＝する、k＝来る；不是動詞回傳 None。"""
+    base = (rd or w).replace('～', '').strip()
+    if not en.lower().startswith('to ') or not base:
+        return None
+    if w.endswith('する') or w == '為る' or (not KANJI.search(w) and base.endswith('する')):
+        return 's'
+    if w == '来る' or base == 'くる':
+        return 'k'
+    if base[-1] not in 'うくぐすつぬぶむる' or (KANJI.search(w) and w[-1] not in 'うくぐすつぬぶむる'):
+        return None
+    if base[-1] == 'る' and len(base) >= 2 and base[-2] in I_E and w not in GODAN_RU and base not in GODAN_RU:
+        return '1'
+    return '5'
+
+
+def load_examples():
+    """tools/ex/*.tsv：id〔tab〕日文例句〔tab〕中文翻譯"""
+    ex = {}
+    for f in glob.glob(os.path.join(HERE, 'ex', '*.tsv')):
+        for line in open(f, encoding='utf-8'):
+            parts = line.rstrip('\n').split('\t')
+            if len(parts) >= 3 and parts[0].isdigit():
+                ex[parts[0]] = [parts[1].strip(), parts[2].strip()]
+    return ex
+
+
 def main():
     rows = list(csv.DictReader(open(os.path.join(HERE, 'vocab_master.tsv'), encoding='utf-8'), delimiter='\t'))
+    examples = load_examples()
     zh = {}
     for f in glob.glob(os.path.join(HERE, 'zh', '*.tsv')):
         for line in open(f, encoding='utf-8'):
@@ -57,6 +92,14 @@ def main():
         item = {'i': 'j' + r['id'], 'w': w, 'r': rd if rd != w else '', 'm': zh[r['id']], 's': say}
         if note:
             item['n'] = note
+        vt = verb_type(w, rd, r['en'])
+        if not vt and '可加する作動詞' in note:
+            vt = 'n'   # 名詞＋する
+        if vt:
+            item['v'] = vt
+        if r['id'] in examples:
+            item['e'] = examples[r['id']]
+            says.append(examples[r['id']][0])
         levels[r['level']].append(item)
         says.append(say)
     os.makedirs(os.path.join(ROOT, 'data', 'jlpt'), exist_ok=True)

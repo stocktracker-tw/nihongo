@@ -243,11 +243,12 @@ function renderMini() {
 }
 
 // ===== 路由 =====
-const routes = { home: viewPath, lesson: viewLesson, guide: viewGuide, kana: viewKana, vocab: viewBooks, book: viewBook, wordstudy: viewWordStudy, grammar: viewGrammar, challenge: viewChallenge, study: viewStudy, kanaquiz: viewKanaQuiz };
+const routes = { home: viewPath, lesson: viewLesson, guide: viewGuide, kana: viewKana, vocab: viewBooks, book: viewBook, wordstudy: viewWordStudy, listen: viewListen, grammar: viewGrammar, challenge: viewChallenge, study: viewStudy, kanaquiz: viewKanaQuiz };
 function route() {
   keyHandler = null;
   gentleRetry = false;
   document.body.classList.remove('in-session');
+  stopPlayer();
   stopSpeech();
   const [name, q] = location.hash.replace(/^#\//, '').split('?');
   const r = routes[name] ? name : 'home';
@@ -696,7 +697,7 @@ function viewChallenge() {
 
 // ===== 分頁列：可拖曳的玻璃膠囊（互動同 Stock Tracker）=====
 // 按住整條列 → 膠囊變透鏡、可左右拖，最靠近的分頁亮起；放開時膠囊滑到該分頁並切換。
-const TAB_ALIAS = { study: 'home', lesson: 'home', guide: 'home', kanaquiz: 'kana', book: 'vocab', wordstudy: 'vocab' };
+const TAB_ALIAS = { study: 'home', lesson: 'home', guide: 'home', kanaquiz: 'kana', book: 'vocab', wordstudy: 'vocab', listen: 'vocab' };
 function tabRoute(r) { return TAB_ALIAS[r] || r; }
 function setupTabbar() {
   const bar = $('#nav'); if (!bar) return;

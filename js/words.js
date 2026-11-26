@@ -54,6 +54,48 @@ function planFor(words, extra) {
 }
 const wordHint = w => `${esc(w.w)}${w.r ? '（' + esc(w.r) + '）' : ''}　${esc(w.m)}`;
 
+// ===== 動詞變化（依資料裡的動詞種類自動產生）=====
+const GODAN = { う: 'わいうえお', く: 'かきくけこ', ぐ: 'がぎぐげご', す: 'さしすせそ', つ: 'たちつてと', ぬ: 'なにぬねの', ぶ: 'ばびぶべぼ', む: 'まみむめも', る: 'らりるれろ' };
+const GODAN_TE = { う: 'って', つ: 'って', る: 'って', む: 'んで', ぶ: 'んで', ぬ: 'んで', く: 'いて', ぐ: 'いで', す: 'して' };
+const HONOR = ['いらっしゃる', 'おっしゃる', 'くださる', 'なさる', 'ござる'];
+function conjugate(w) {
+  const t = w.v; if (!t) return null;
+  let base = (w.w.includes('～') ? (w.r || w.w) : w.w).replace(/[～\s]/g, '');
+  const kana = (w.r || w.w).replace(/[～\s]/g, '');
+  if (/[、,・]/.test(base)) return null;
+  const F = (a, b, c, d, e, f, g, h) => [['辞書形', a], ['ます形', b], ['て形', c], ['た形', d], ['ない形', e], ['可能形', f], ['意向形', g], ['條件形', h]];
+  if (t === 'k') return F('来る（くる）', '来ます（きます）', '来て（きて）', '来た（きた）', '来ない（こない）', '来られる（こられる）', '来よう（こよう）', '来れば（くれば）');
+  if (t === 's' || t === 'n') {
+    const st = t === 'n' ? base : base.replace(/(する|為る)$/, '');
+    const pot = t === 's' && st.length === 1 && /[\u4e00-\u9fff]/.test(st) ? st + 'せる' : st + 'できる';
+    return F(st + 'する', st + 'します', st + 'して', st + 'した', st + 'しない', pot, st + 'しよう', st + 'すれば');
+  }
+  const st = base.slice(0, -1), last = base.slice(-1);
+  if (t === '1') return F(base, st + 'ます', st + 'て', st + 'た', st + 'ない', st + 'られる', st + 'よう', st + 'れば');
+  const r = GODAN[last]; if (!r) return null;
+  let te = st + GODAN_TE[last];
+  if (kana === 'いく' || base === '行く') te = st + 'って';
+  const ta = te.replace(/て$/, 'た').replace(/で$/, 'だ');
+  const masu = st + (HONOR.includes(kana) ? 'い' : r[1]) + 'ます';
+  const nai = kana === 'ある' ? 'ない' : st + r[0] + 'ない';
+  return F(base, masu, te, ta, nai, st + r[3] + 'る', st + r[4] + 'う', st + r[3] + 'ば');
+}
+function conjHTML(w, open = false) {
+  const c = conjugate(w); if (!c) return '';
+  return `<details class="conj" ${open ? 'open' : ''}><summary>動詞變化</summary><div class="conj-grid">${c.map(([k, v]) => `<span class="k">${k}</span><span class="v jp">${esc(v)}</span>`).join('')}</div></details>`;
+}
+// 例句裡把這個字標出來
+function exHTML(w) {
+  if (!w.e) return '';
+  let ja = esc(w.e[0]);
+  const key = w.w.replace(/[～\s]/g, '');
+  const stem = w.v && w.v !== 'n' ? key.slice(0, -1) : key;
+  for (const k of [key, stem, (w.r || '').replace(/[～\s]/g, '')]) {
+    if (k && k.length >= 1 && ja.includes(esc(k))) { ja = ja.replace(esc(k), `<mark>${esc(k)}</mark>`); break; }
+  }
+  return `<div class="ex"><div class="row between" style="flex-wrap:nowrap"><div><div class="ja jp">${ja}</div><div class="zh">${esc(w.e[1])}</div></div>${audioBtn(w.e[0])}</div></div>`;
+}
+
 // ===== 單字書首頁 =====
 async function viewBooks() {
   const b = curBook();
@@ -86,6 +128,7 @@ async function viewBooks() {
         ${done ? `<span class="tag" style="padding:8px 14px">今日任務完成 🎉</span><a class="btn" href="#/wordstudy?extra=10">再背 10 個</a>`
                : `<a class="btn primary big" href="#/wordstudy">開始背單字</a>`}
         <a class="btn" href="#/book?lv=${b.lv}">${ico('book')} 瀏覽單字</a>
+        <a class="btn" href="#/listen">${ico('speaker')} 隨身聽</a>
       </div>
       <div class="row small muted" style="margin-top:14px">每日新詞
         ${DAILY_CHOICES.map(n => `<button class="chip ${n === dailyNew() ? 'on' : ''}" data-n="${n}">${n}</button>`).join('')}</div>
@@ -150,13 +193,14 @@ function loadFailed() {
     <p class="muted">可能是沒有網路。連上網路後再試一次，載入過的書之後離線也能用。</p>
     <button class="btn primary" onclick="route()">再試一次</button></div></div>`;
 }
-function wordRow(w) {
+function wordRow(w, selectable = false, checked = false) {
   const st = wordState(w.i);
-  return `<tr data-say="${esc(w.s)}" style="cursor:pointer"><td class="w">${esc(w.w)}</td><td class="jp muted">${esc(w.r)}</td>
-    <td>${esc(w.m)}${w.n ? `<div class="small muted">${esc(w.n)}</div>` : ''}</td><td>${w.lv ? `<span class="lvl">${w.lv}</span> ` : ''}<span class="lvl ${st.cls}">${st.name}</span></td></tr>`;
+  const lead = selectable ? `<td class="pick"><input type="checkbox" ${checked ? 'checked' : ''} tabindex="-1"></td>` : '';
+  return `<tr ${selectable ? `data-id="${w.i}" class="${checked ? 'sel' : ''}"` : `data-say="${esc(w.s)}"`} style="cursor:pointer">${lead}<td class="w">${esc(w.w)}</td><td class="jp muted">${esc(w.r)}</td>
+    <td>${esc(w.m)}${w.n ? `<div class="small muted">${esc(w.n)}</div>` : ''}${w.e ? `<div class="small muted jp ex-line">${esc(w.e[0])}</div>` : ''}</td><td>${w.lv ? `<span class="lvl">${w.lv}</span> ` : ''}<span class="lvl ${st.cls}">${st.name}</span></td></tr>`;
 }
 
-// ===== 瀏覽整本 =====
+// ===== 瀏覽整本（可批次標記）=====
 async function viewBook(q) {
   const b = BOOKS.find(x => x.lv === q.get('lv')) || curBook();
   const filter = q.get('f') || 'all';
@@ -164,20 +208,66 @@ async function viewBook(q) {
   let words;
   try { words = await loadBook(b.lv); } catch (e) { return loadFailed(); }
   if (!stillOn('book')) return;
-  const list = words.filter(w => filter === 'all' || wordState(w.i).k === filter || (filter === 'l' && wordState(w.i).k === 'r'));
-  let shown = 100;
+  const match = w => { const k = wordState(w.i).k; return filter === 'all' || k === filter || (filter === 'l' && k === 'r'); };
+  let list = words.filter(match);
+  let shown = 100, selecting = false;
+  const sel = new Set();
   const tabs = [['all', '全部'], ['n', '未學'], ['l', '學習中'], ['m', '已掌握']];
   view.innerHTML = `
     <a href="#/vocab" class="muted" style="text-decoration:none">← 單字書</a>
-    <h1 style="margin-top:8px">${b.name} ${b.desc}單字</h1><p class="sub">${list.length} 字 · 點一列聽發音</p>
-    <div class="row" style="margin-bottom:12px">${tabs.map(([k, l]) => `<a class="chip ${k === filter ? 'on' : ''}" href="#/book?lv=${b.lv}&f=${k}">${l}</a>`).join('')}</div>
+    <h1 style="margin-top:8px">${b.name} ${b.desc}單字</h1><p class="sub" id="cnt"></p>
+    <div class="row between" style="margin-bottom:12px">
+      <div class="row">${tabs.map(([k, l]) => `<a class="chip ${k === filter ? 'on' : ''}" href="#/book?lv=${b.lv}&f=${k}">${l}</a>`).join('')}</div>
+      <button class="chip" id="selBtn">選取</button>
+    </div>
+    <div class="selbar" id="selbar" hidden>
+      <span id="selN">已選 0</span>
+      <button class="chip" data-act="all">全選這頁</button>
+      <button class="chip" data-act="none">取消</button>
+      <button class="chip" data-act="master">標為已掌握</button>
+      <button class="chip" data-act="unmaster">取消已掌握</button>
+      <button class="chip" data-act="reset">重新學</button>
+    </div>
     <div class="card" style="padding:6px 16px;overflow-x:auto"><table class="vocab-table"><tbody id="bt"></tbody></table></div>
     <div style="text-align:center;margin-top:14px"><button class="btn" id="more">再載入 100 個</button></div>`;
   const draw = () => {
-    $('#bt').innerHTML = list.slice(0, shown).map(wordRow).join('') || '<tr><td class="muted">這裡還沒有單字</td></tr>';
+    $('#cnt').textContent = `${list.length} 字 · ${selecting ? '點一列選取' : '點一列聽發音'}`;
+    $('#bt').innerHTML = list.slice(0, shown).map(w => wordRow(w, selecting, sel.has(w.i))).join('') || '<tr><td class="muted">這裡還沒有單字</td></tr>';
     $('#more').style.display = shown < list.length ? '' : 'none';
+    $('#selbar').hidden = !selecting;
+    $('#selN').textContent = `已選 ${sel.size}`;
+    $('#selBtn').textContent = selecting ? '完成' : '選取';
+    $('#selBtn').classList.toggle('on', selecting);
   };
   $('#more').onclick = () => { shown += 100; draw(); };
+  $('#selBtn').onclick = () => { selecting = !selecting; sel.clear(); draw(); };
+  $('#bt').onclick = e => {
+    if (!selecting) return;
+    const tr = e.target.closest('tr[data-id]'); if (!tr) return;
+    const id = tr.dataset.id;
+    sel.has(id) ? sel.delete(id) : sel.add(id);
+    tr.classList.toggle('sel', sel.has(id));
+    tr.querySelector('input').checked = sel.has(id);
+    $('#selN').textContent = `已選 ${sel.size}`;
+  };
+  $('#selbar').onclick = e => {
+    const act = e.target.closest('[data-act]')?.dataset.act; if (!act) return;
+    if (act === 'all') { list.slice(0, shown).forEach(w => sel.add(w.i)); return draw(); }
+    if (act === 'none') { sel.clear(); return draw(); }
+    if (!sel.size) return toast('先點選要處理的單字');
+    if (act === 'reset' && !confirm(`把 ${sel.size} 個字的學習進度清除、重新開始學？`)) return;
+    state.mastered = state.mastered || {};
+    sel.forEach(id => {
+      if (act === 'master') state.mastered[id] = 1;
+      if (act === 'unmaster') delete state.mastered[id];
+      if (act === 'reset') { delete state.mastered[id]; delete state.srs[id]; }
+    });
+    save();
+    toast({ master: `${sel.size} 個字標為已掌握`, unmaster: `${sel.size} 個字取消已掌握`, reset: `${sel.size} 個字已重新開始` }[act]);
+    sel.clear();
+    list = words.filter(match);
+    draw();
+  };
   draw();
 }
 
@@ -202,6 +292,8 @@ async function viewWordStudy(q) {
     graded.set(item.w.i, g);
     const td = wordToday();
     if (item.isNew) { td.new++; nNew++; } else { td.rev++; nRev++; }
+    td.ids = td.ids || [];
+    if (!td.ids.includes(item.w.i)) td.ids.push(item.w.i);
     state.srs[item.w.i] = nextSRS(state.srs[item.w.i], g);
     if (!seen.includes(item.w)) seen.push(item.w);
     addXP(g >= 2 ? 2 : 1);
@@ -230,6 +322,8 @@ async function viewWordStudy(q) {
           ${w.r ? `<div class="prompt-reading">${esc(w.r)}</div>` : ''}
           <div class="prompt-meaning" style="margin-top:6px">${esc(w.m)}</div>
           ${w.n ? `<div class="small muted" style="margin-top:4px">${esc(w.n)}</div>` : ''}
+          ${exHTML(w)}
+          ${conjHTML(w)}
         </div>
         <div style="margin-top:12px">${audioBtn(w.s)}</div>
       </div>
@@ -305,9 +399,133 @@ async function viewWordStudy(q) {
         </div>
         <div class="row" style="justify-content:center">
           <a class="btn" href="#/vocab">回單字書</a>
+          <a class="btn" href="#/listen?src=today">${ico('speaker')} 隨身聽複習</a>
           <a class="btn primary" href="#/wordstudy?extra=10">再背 10 個</a>
         </div>
       </div></div>`;
   };
   step();
+}
+
+// =====================================================================
+// 隨身聽：自動連續播放 單字 → 例句，可以收起手機用聽的
+// =====================================================================
+let player = null;
+function stopPlayer() { if (player) { player.stop(); player = null; } }
+async function viewListen(q) {
+  const b = curBook();
+  view.innerHTML = `<p class="muted">載入中…</p>`;
+  let words;
+  try { words = await loadBook(b.lv); } catch (e) { return loadFailed(); }
+  if (!stillOn('listen')) return;
+  const src = q.get('src') || 'learning';
+  const m = state.mastered || {};
+  const ids = new Set((wordToday().ids) || []);
+  const pools = {
+    today: words.filter(w => ids.has(w.i)),
+    learning: words.filter(w => state.srs[w.i] && !m[w.i]),
+    book: words,
+  };
+  const names = { today: '今天背過', learning: '學習中', book: '整本書' };
+  const list = pools[src];
+  view.innerHTML = `
+    <a href="#/vocab" class="muted" style="text-decoration:none">← 單字書</a>
+    <h1 style="margin-top:8px">隨身聽</h1>
+    <p class="sub">${b.name} · 自動播放單字和例句，可以收起手機用聽的。</p>
+    <div class="row" style="margin-bottom:14px">${Object.keys(names).map(k => `<a class="chip ${k === src ? 'on' : ''}" href="#/listen?src=${k}">${names[k]}（${pools[k].length}）</a>`).join('')}</div>
+    ${list.length ? `
+    <div class="card prompt-card player">
+      <div class="small muted" id="pPos"></div>
+      <div class="prompt-word" id="pWord"></div>
+      <div class="prompt-reading" id="pRead"></div>
+      <div class="prompt-meaning" id="pMean" style="margin-top:6px"></div>
+      <div id="pEx" class="ex" hidden><div class="ja jp" id="pExJa"></div><div class="zh" id="pExZh"></div></div>
+    </div>
+    <div class="row" style="justify-content:center;margin-top:16px;gap:14px">
+      <button class="icon-btn big-ctl" id="pPrev" aria-label="上一個">⏮</button>
+      <button class="icon-btn big-ctl play" id="pPlay" aria-label="播放">▶</button>
+      <button class="icon-btn big-ctl" id="pNext" aria-label="下一個">⏭</button>
+    </div>
+    <div class="row" style="justify-content:center;margin-top:14px">
+      <button class="chip" id="pEx1">播例句</button>
+      <button class="chip" id="pRep">每個念 1 次</button>
+      <button class="chip" id="pShuf">隨機順序</button>
+    </div>` : `<div class="card"><p class="muted" style="margin:0">這裡還沒有單字。${src === 'today' ? '先去背今天的單字吧。' : ''}</p></div>`}`;
+  if (!list.length) return;
+
+  const opts = { ex: true, rep: 1, shuffle: false };
+  let order = list.slice(), idx = 0, playing = false, token = 0, audio = null;
+  const show = () => {
+    const w = order[idx];
+    $('#pPos').textContent = `${idx + 1} / ${order.length}`;
+    $('#pWord').textContent = w.w;
+    $('#pRead').textContent = w.r || '';
+    $('#pMean').textContent = w.m;
+    $('#pEx').hidden = !(w.e && opts.ex);
+    if (w.e) { $('#pExJa').textContent = w.e[0]; $('#pExZh').textContent = w.e[1]; }
+    if ('mediaSession' in navigator && window.MediaMetadata) {
+      navigator.mediaSession.metadata = new MediaMetadata({ title: w.w, artist: w.m, album: `Nihongo 隨身聽 · ${b.name}`, artwork: [{ src: 'img/icon-512.png', sizes: '512x512', type: 'image/png' }] });
+    }
+  };
+  // 播一段文字：有 Azure 音檔就用音檔，沒有就用裝置語音
+  const say = (text, my) => new Promise(res => {
+    if (my !== token) return res();
+    const h = speechHash(text);
+    if (audioIndex && !audioIndex.has(h)) {
+      if (!('speechSynthesis' in window)) return res();
+      const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; u.rate = S().rate; if (jaVoice) u.voice = jaVoice;
+      u.onend = u.onerror = () => res(); speechSynthesis.speak(u); return;
+    }
+    audio = new Audio(`audio/${h}.mp3`);
+    audio.onended = audio.onerror = () => res();
+    audio.play().catch(() => res());
+  });
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const run = async () => {
+    const my = ++token;
+    while (playing && my === token) {
+      const w = order[idx];
+      show();
+      for (let k = 0; k < opts.rep && my === token; k++) { await say(w.s, my); await wait(500); }
+      if (opts.ex && w.e && my === token) { await wait(250); await say(w.e[0], my); }
+      await wait(900);
+      if (my !== token || !playing) break;
+      idx = (idx + 1) % order.length;
+    }
+  };
+  const setPlaying = on => {
+    playing = on;
+    $('#pPlay').textContent = on ? '❚❚' : '▶';
+    $('#pPlay').setAttribute('aria-label', on ? '暫停' : '播放');
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = on ? 'playing' : 'paused';
+    if (on) run(); else { token++; if (audio) audio.pause(); if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+  };
+  const jump = d => { idx = (idx + d + order.length) % order.length; show(); if (playing) { token++; if (audio) audio.pause(); run(); } };
+  $('#pPlay').onclick = () => setPlaying(!playing);
+  $('#pPrev').onclick = () => jump(-1);
+  $('#pNext').onclick = () => jump(1);
+  const syncChips = () => {
+    $('#pEx1').classList.toggle('on', opts.ex);
+    $('#pRep').textContent = `每個念 ${opts.rep} 次`; $('#pRep').classList.toggle('on', opts.rep > 1);
+    $('#pShuf').classList.toggle('on', opts.shuffle);
+  };
+  $('#pEx1').onclick = () => { opts.ex = !opts.ex; syncChips(); show(); };
+  $('#pRep').onclick = () => { opts.rep = opts.rep % 3 + 1; syncChips(); };
+  $('#pShuf').onclick = () => { opts.shuffle = !opts.shuffle; const cur = order[idx]; order = opts.shuffle ? shuffle(list) : list.slice(); idx = Math.max(0, order.indexOf(cur)); syncChips(); show(); };
+  if ('mediaSession' in navigator) {
+    const ms = navigator.mediaSession;
+    try {
+      ms.setActionHandler('play', () => setPlaying(true));
+      ms.setActionHandler('pause', () => setPlaying(false));
+      ms.setActionHandler('nexttrack', () => jump(1));
+      ms.setActionHandler('previoustrack', () => jump(-1));
+    } catch (e) { /* 部分瀏覽器不支援 */ }
+  }
+  keyHandler = e => {
+    if (e.key === ' ') { e.preventDefault(); setPlaying(!playing); }
+    if (e.key === 'ArrowRight') jump(1);
+    if (e.key === 'ArrowLeft') jump(-1);
+  };
+  player = { stop: () => setPlaying(false) };
+  syncChips(); show();
 }
