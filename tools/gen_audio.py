@@ -19,6 +19,31 @@ RATE = '-12%'
 PITCH = '-8%'
 
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+# 念法修正：只影響送給 Azure 的文字，App 播放時仍用原文找檔案。
+# 單獨一個詞或句首時容易念成別的讀音的漢字，改成指定的假名。
+WHOLE = {   # 整段完全相同才替換
+    '今': 'いま', '本': 'ほん', '雨': 'あめ', '私は': 'わたしは', '私の': 'わたしの', '本を': 'ほんを',
+    '机の': 'つくえの', '学生': 'がくせい', '上に': 'うえに', '一緒に': 'いっしょに',
+}
+PARTS = [   # 段落中出現就替換
+    ('明日', 'あした'), ('昨日', 'きのう'), ('今日', 'きょう'), ('何ですか', 'なんですか'),
+    ('日本', 'にほん'), ('私', 'わたし'), ('上に', 'うえに'),
+]
+
+
+def tts_text(t: str) -> str:
+    if t in WHOLE:
+        return WHOLE[t]
+    # 單一平假名（は・へ・を…）單獨念時會被當成助詞，改用同音的片假名
+    if len(t) == 1 and 'ぁ' <= t <= 'ゖ':
+        return chr(ord(t) + 0x60)
+    for a, b in PARTS:
+        t = t.replace(a, b)
+    return t
+
+
 def speech_hash(s: str) -> str:
     """FNV-1a 32 位元，與 app.js 的 speechHash() 相同。"""
     h = 0x811c9dc5
@@ -60,17 +85,26 @@ def main():
     force = '--force' in sys.argv
     texts = json.load(open(os.path.join(ROOT, 'tools', 'texts.json'), encoding='utf-8'))
     os.makedirs(OUT, exist_ok=True)
+    # 記錄每個檔案是用什麼「念法＋聲音設定」產生的；念法或聲音變了就自動重做
+    made_path = os.path.join(HERE, 'made.json')
+    made_log = json.load(open(made_path, encoding='utf-8')) if os.path.exists(made_path) else {}
+    sig = f'{VOICE}|{RATE}|{PITCH}'
     index, made = {}, 0
     for i, t in enumerate(texts, 1):
         h = speech_hash(t)
         path = os.path.join(OUT, h + '.mp3')
-        if force or not os.path.exists(path):
-            data = synth(t, key, region)
+        said = tts_text(t)
+        want = f'{sig}|{said}'
+        if force or not os.path.exists(path) or made_log.get(h) != want:
+            data = synth(said, key, region)
             with open(path, 'wb') as f:
                 f.write(data)
             made += 1
-            print(f'[{i}/{len(texts)}] {t}', flush=True)
+            print(f'[{i}/{len(texts)}] {t}' + (f'  →  {said}' if said != t else ''), flush=True)
+        made_log[h] = want
         index[h] = t
+    with open(made_path, 'w', encoding='utf-8') as f:
+        json.dump({h: made_log[h] for h in sorted(index)}, f, ensure_ascii=False, indent=0)
     # 刪掉清單裡已經沒有的舊檔
     for f in os.listdir(OUT):
         if f.endswith('.mp3') and f[:-4] not in index:
