@@ -52,76 +52,39 @@ function greeting() {
 }
 
 // =====================================================================
-// 學習路徑（首頁）
+// 入門課程（列表，從「發現」進入）
 // =====================================================================
 function viewPath() {
   const nx = nextNode();
-  const due = dueIds().length;
-  const xpToday = state.xpDay[today()] || 0;
-  const goal = S().goal;
-  const started = Object.keys(state.lessons || {}).length > 0;
+  const total = COURSE.reduce((a, u) => a + nLessons(u), 0);
+  const doneAll = COURSE.reduce((a, u, ui) => a + Array.from({ length: nLessons(u) }, (_, li) => isDone(ui, li)).filter(Boolean).length, 0);
   view.innerHTML = `
-    <div class="card path-head">
-      <div class="mascot-row">${mascot(84)}<div class="bubble">${greeting()}</div></div>
-      <div class="head-stats">
-        <div class="stat"><div class="week">${weekDays().map(d => `<span class="wd ${d.active ? 'on' : ''} ${d.today ? 'today' : ''}" title="${d.active ? '有學習' : ''}">${d.label}</span>`).join('')}</div><span class="lbl">本週學習日</span></div>
-        <div class="stat"><span class="num">${totalDays()}</span><span class="lbl">學習天數</span></div>
-        <div class="stat"><span class="num">${state.xp}</span><span class="lbl">總 XP</span></div>
-        ${goal ? `<div class="stat"><span class="num">${xpToday}<small class="muted" style="font-size:14px"> / ${goal}</small></span><span class="lbl">今日小目標</span><div class="bar"><i style="width:${Math.min(100, xpToday / goal * 100)}%"></i></div></div>` : ''}
-      </div>
-      <div class="row">
-        ${nx ? `<a class="btn primary big" href="${lessonHref(nx)}">${started ? '繼續學習' : '開始第一課'}</a>` : '<span class="tag">全部課程完成了 🎉</span>'}
-        ${due ? `<a class="btn" href="#/study">複習 ${due} 個</a>` : ''}
-        ${wordDueCount() ? `<a class="btn" href="#/vocab">單字待複習 ${wordDueCount()}</a>` : ''}
-        <a class="btn" href="#/challenge">自由練習</a>
-      </div>
-    </div>
-    ${COURSE.map((u, ui) => unitSection(u, ui, nx)).join('')}
-    <p class="small muted" style="text-align:center;margin-top:40px">這裡沒有連續天數、沒有愛心、不鎖課，也不會推播催你。<br>想學就學，想休息就休息，進度都會留著。</p>`;
-
-  $$('.node').forEach(b => b.onclick = () => {
-    const wrap = b.parentElement;
-    const open = wrap.nextElementSibling && wrap.nextElementSibling.classList.contains('pop');
-    $$('.pop').forEach(p => p.remove());
-    if (!open) wrap.insertAdjacentHTML('afterend', popHTML(+b.dataset.u, +b.dataset.l, nx));
-  });
-  setTimeout(() => {
-    const cur = $('.node.current');
-    if (cur && cur.getBoundingClientRect().top > innerHeight - 80) cur.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  }, 50);
+    <a href="#/discover" class="muted backlink">‹ 發現</a>
+    <h1 style="margin-top:8px">入門課程</h1>
+    <p class="sub">從五十音到基本單字和句子，共 ${COURSE.length} 個單元。完成 ${doneAll} / ${total} 課，不鎖課，想從哪裡開始都可以。</p>
+    ${nx ? `<a class="btn primary big" href="${lessonHref(nx)}" style="margin-bottom:6px">${doneAll ? '繼續' : '開始'}：第 ${nx[0] + 1} 單元 第 ${nx[1] + 1} 課</a>` : '<span class="tag">全部課程完成了</span>'}
+    ${COURSE.map((u, ui) => unitSection(u, ui, nx)).join('')}`;
 }
 function unitSection(u, ui, nx) {
   const color = UNIT_COLORS[ui % UNIT_COLORS.length];
   const n = nLessons(u);
   let doneCount = 0;
-  const nodes = Array.from({ length: n }, (_, li) => {
+  const items = Array.from({ length: n }, (_, li) => {
     const review = li === u.lessons.length;
     const d = isDone(ui, li); if (d) doneCount++;
     const cur = nx && nx[0] === ui && nx[1] === li;
-    const offset = Math.round(Math.sin(li * 1.25) * 72);
-    const icon = d ? '✓' : review ? '★' : u.kana ? unitKana(u, u.lessons[li])[0][0] : u.words[u.lessons[li][0]][2];
-    return `<div class="node-wrap" style="transform:translateX(${offset}px)">
-      ${cur ? '<div class="node-label">從這裡開始</div>' : ''}
-      <button class="node ${d ? 'done' : ''} ${cur ? 'current' : ''} ${review ? 'review' : ''}" data-u="${ui}" data-l="${li}" title="${review ? '單元複習' : '第 ' + (li + 1) + ' 課'}">${icon}</button></div>`;
+    const what = review ? '單元複習' : u.kana ? unitKana(u, u.lessons[li]).map(x => x[0]).join(' ') : u.lessons[li].map(k => u.words[k][0]).join('・');
+    return `<a class="lesson-row ${d ? 'done' : ''} ${cur ? 'cur' : ''}" href="${lessonHref([ui, li])}">
+      <span class="lnum">${d ? ico('check') : review ? '★' : li + 1}</span>
+      <span class="grow"><span class="small muted">${review ? '' : '第 ' + (li + 1) + ' 課'}</span><span class="jp lwhat">${esc(what)}</span></span>${ico('chev', 'chev')}</a>`;
   }).join('');
-  return `<section class="unit" style="--c:${color}">
-    <div class="unit-banner" data-no="${String(ui + 1).padStart(2, '0')}">
-      <div><div class="unit-no">第 ${ui + 1} 單元 · ${doneCount}/${n}</div><div class="unit-title">${esc(u.title)}</div><div class="unit-desc">${esc(u.desc)}</div></div>
-      <a class="btn guide-btn" href="#/guide?u=${ui}">${ico('book')}指南</a>
+  return `<section class="card unit-card" style="--c:${color}">
+    <div class="row between" style="flex-wrap:nowrap">
+      <div><div class="small muted">第 ${ui + 1} 單元 · ${doneCount}/${n}</div><div class="plan-title">${esc(u.title)}</div><div class="small muted">${esc(u.desc)}</div></div>
+      <a class="chip" href="#/guide?u=${ui}">指南</a>
     </div>
-    <div class="nodes">${nodes}</div></section>`;
-}
-function popHTML(ui, li, nx) {
-  const u = COURSE[ui];
-  const review = li === u.lessons.length;
-  const d = isDone(ui, li);
-  const ahead = nx && (ui > nx[0] || (ui === nx[0] && li > nx[1]));
-  const items = review ? '本單元全部內容' : u.kana ? unitKana(u, u.lessons[li]).map(x => x[0]).join(' ') : u.lessons[li].map(k => u.words[k][0]).join('・');
-  return `<div class="pop fade-in">
-    <b>${review ? '單元複習' : '第 ' + (li + 1) + ' 課'}</b>
-    <div class="jp" style="margin:4px 0 10px">${esc(items)}</div>
-    ${ahead ? '<div class="small muted" style="margin-bottom:10px">建議先完成前面的課，不過想先看看也完全可以。</div>' : ''}
-    <a class="btn primary block" href="${lessonHref([ui, li])}">${d ? '再練一次 · +5 XP' : '開始 · +10 XP'}</a></div>`;
+    <div class="bar" style="margin:12px 0 6px"><i style="width:${doneCount / n * 100}%"></i></div>
+    <div class="lessons">${items}</div></section>`;
 }
 
 // =====================================================================
@@ -129,7 +92,7 @@ function popHTML(ui, li, nx) {
 // =====================================================================
 function viewGuide(q) {
   const ui = +q.get('u'); const u = COURSE[ui];
-  if (!u) { location.hash = '#/home'; return; }
+  if (!u) { location.hash = '#/course'; return; }
   const first = Array.from({ length: nLessons(u) }, (_, li) => li).find(li => !isDone(ui, li)) ?? 0;
   const color = UNIT_COLORS[ui % UNIT_COLORS.length];
   let body = '';
@@ -142,7 +105,7 @@ function viewGuide(q) {
       <h2>重點句子</h2><div class="card">${u.sentences.map(s => `<div class="example row between"><div><div class="ja">${esc(s[0])}</div><div>${esc(s[2])}</div></div>${audioBtn(s[0])}</div>`).join('')}</div>`;
   }
   view.innerHTML = `
-    <a href="#/home" class="muted" style="text-decoration:none">← 回課程</a>
+    <a href="#/course" class="muted backlink">‹ 入門課程</a>
     <div class="unit-banner" style="--c:${color};margin-top:12px"><div><div class="unit-no">第 ${ui + 1} 單元指南</div><div class="unit-title">${esc(u.title)}</div><div class="unit-desc">${esc(u.desc)}</div></div></div>
     <h2>小提示</h2>
     <div class="grid grid-2">${u.tips.map(t => `<div class="card"><b>${esc(t.h)}</b><p style="margin:6px 0 0">${esc(t.p)}</p></div>`).join('')}</div>
@@ -155,7 +118,7 @@ function viewGuide(q) {
 // =====================================================================
 function viewLesson(q) {
   const ui = +q.get('u'), li = +q.get('l'); const u = COURSE[ui];
-  if (!u || !(li >= 0 && li < nLessons(u))) { location.hash = '#/home'; return; }
+  if (!u || !(li >= 0 && li < nLessons(u))) { location.hash = '#/course'; return; }
   const replay = isDone(ui, li);
   const built = u.kana ? buildKanaLesson(u, li, replay) : buildWordLesson(u, ui, li, replay);
   const queue = built.exs.map(f => ({ f, first: true }));
@@ -168,7 +131,7 @@ function viewLesson(q) {
       return finishLesson(ui, li, replay, { correct, answered, secs: Math.round((Date.now() - t0) / 1000), words: built.words, kana: built.kana });
     }
     const cur = queue[0];
-    const stage = sessionShell(finished / total, null, '#/home');
+    const stage = sessionShell(finished / total, null, '#/course');
     const next = () => { keyHandler = null; queue.shift(); finished++; step(); };
     if (cur.f.teach) return cur.f(stage, next);
     cur.f(stage, ok => {
@@ -209,11 +172,11 @@ function finishLesson(ui, li, replay, r) {
       ${r.words && r.words.length ? `<div class="row" style="justify-content:center;margin-bottom:20px">${r.words.map(w => `<button class="chip jp" data-say="${esc(w.reading)}">${w.emoji} ${esc(w.word)}</button>`).join('')}</div>` : ''}
       ${r.kana && r.kana.length ? `<div class="row" style="justify-content:center;margin-bottom:20px">${r.kana.map(([k]) => `<button class="chip jp" data-say="${k}">${k}</button>`).join('')}</div>` : ''}
       <div class="row" style="justify-content:center">
-        <a class="btn" href="#/home">回課程</a>
+        <a class="btn" href="#/course">回課程</a>
         ${nx ? `<a class="btn primary" href="${lessonHref(nx)}">下一課 →</a>` : ''}
       </div>
     </div></div>`;
-  keyHandler = e => { if (e.key === 'Enter') location.hash = nx ? lessonHref(nx) : '#/home'; };
+  keyHandler = e => { if (e.key === 'Enter') location.hash = nx ? lessonHref(nx) : '#/course'; };
 }
 
 // ===== 題目產生：單字課 =====

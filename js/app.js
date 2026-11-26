@@ -1,6 +1,6 @@
 'use strict';
 // =====================================================================
-// Nihongo — Duolingo 式課程（不情勒：無愛心、無連續天數）、識日式單字書（N5～N1）、
+// Nihongo — 介面仿「識日」（首頁任務卡＋功能格、詞典、發現、我的），N5～N1 單字書、入門課程（不情勒）、
 // Anki 間隔重複、WaniKani 輸入作答、Bunpro 文法填空、Tofugu 五十音口訣、手寫練習。
 // 純靜態網頁，資料只存在瀏覽器；發音為預先產生的 Azure 音檔。
 // =====================================================================
@@ -228,6 +228,19 @@ const ICONS = {
   star: '<path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.6L12 16.5l-5.1 2.7 1-5.6-4.1-4 5.7-.8z"/>',
   cards: '<rect x="3.5" y="6.5" width="13" height="14" rx="2.5"/><path d="M7.5 3.5h10.5A2.5 2.5 0 0 1 20.5 6v11"/>',
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+  headphones: '<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="13.5" width="4.5" height="7" rx="2"/><rect x="16" y="13.5" width="4.5" height="7" rx="2"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h7"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
+  chev: '<path d="m9 5 7 7-7 7"/>',
+  heart: '<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/>',
+  chart: '<path d="M4 20h16"/><rect x="5.5" y="11" width="3" height="6.5" rx="1"/><rect x="10.5" y="6.5" width="3" height="11" rx="1"/><rect x="15.5" y="13.5" width="3" height="4" rx="1"/>',
+  layers: '<path d="m12 4 8.5 4.5L12 13 3.5 8.5z"/><path d="m3.5 12.5 8.5 4.5 8.5-4.5"/><path d="m3.5 16.5 8.5 4.5 8.5-4.5"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  check: '<circle cx="12" cy="12" r="8.5"/><path d="m8.2 12.3 2.6 2.6 5-5.4"/>',
+  kana: '<path d="M8 6.5h8M12 4v4.5c0 4-1.5 7.5-4.5 10"/><path d="M8.5 13c2.5-1.2 6-1 7.5.8 1.4 1.7.3 4.6-3.5 5.2"/>',
+  pen: '<path d="M15.5 4.5 19.5 8.5 9 19H5v-4z"/><path d="m13.5 6.5 4 4"/>',
+  route: '<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h6.5a3.5 3.5 0 0 0 0-7h-5a3.5 3.5 0 0 1 0-7H16"/>',
+  cog: '<circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M6 18l1.6-1.6M16.4 7.6 18 6"/>',
   bulb: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/>',
 };
 const ico = (name, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
@@ -249,11 +262,11 @@ function wordDueCount() {
 }
 function renderMini() {
   const el = $('#miniStats');
-  if (el) el.innerHTML = `<span title="累積學習天數">${ico('calendar')}${totalDays()}</span><span title="總 XP">${ico('star')}${state.xp}</span><span title="待複習（課程＋單字書）">${ico('cards')}${dueIds().length + wordDueCount()}</span>`;
+  if (el) el.innerHTML = `<span title="累積學習天數">${ico('calendar')}${totalDays()} 天</span><span title="待複習">${ico('cards')}${dueIds().length + wordDueCount()}</span>`;
 }
 
 // ===== 路由 =====
-const routes = { home: viewPath, lesson: viewLesson, guide: viewGuide, kana: viewKana, vocab: viewBooks, book: viewBook, wordstudy: viewWordStudy, listen: viewListen, grammar: viewGrammar, challenge: viewChallenge, study: viewStudy, kanaquiz: viewKanaQuiz };
+const routes = { home: viewHome, vocab: viewHome, dict: viewDict, discover: viewDiscover, me: viewMe, course: viewPath, lesson: viewLesson, guide: viewGuide, kana: viewKana, book: viewBook, wordstudy: viewWordStudy, listen: viewListen, grammar: viewGrammar, challenge: viewChallenge, study: viewStudy, kanaquiz: viewKanaQuiz };
 function route() {
   keyHandler = null;
   gentleRetry = false;
@@ -547,7 +560,7 @@ function viewStudy(q) {
   const newLimit = q.get('new') ? S().newPerDay : 0;
   const fresh = VOCAB.filter(v => !state.srs[v.id]).slice(0, newLimit).map(v => v.id);
   if (!due.length && !fresh.length) {
-    view.innerHTML = `<div class="session"><div class="card result">${mascot(110)}<h1>現在沒有要複習的東西</h1><p class="muted">學過的單字會在快忘記的時候回來找你。<br>去學一課新的，或者單純休息也很好。</p><a class="btn primary" href="#/home">回課程</a></div></div>`;
+    view.innerHTML = `<div class="session"><div class="card result">${mascot(110)}<h1>現在沒有要複習的東西</h1><p class="muted">學過的單字會在快忘記的時候回來找你。<br>去學一課新的，或者單純休息也很好。</p><a class="btn primary" href="#/discover">回發現</a></div></div>`;
     return;
   }
   // 新卡分散插入複習中
@@ -558,10 +571,10 @@ function viewStudy(q) {
   let correct = 0, xp = 0;
 
   const step = () => {
-    if (!queue.length) return showResult({ title: '今日學習完成！', correct, total, xp, back: '#/home' });
+    if (!queue.length) return showResult({ title: '今日學習完成！', correct, total, xp, back: '#/discover' });
     const cur = queue[0];
     const item = ITEMS[cur.id];
-    const stage = sessionShell(graded.size / total, null, '#/home');
+    const stage = sessionShell(graded.size / total, null, '#/discover');
     const next = () => { queue.shift(); step(); };
     const result = (ok, grade) => {
       if (!graded.has(cur.id)) {
@@ -694,8 +707,8 @@ function viewChallenge() {
   const qs = Array.from({ length: 10 }, (_, i) => builders[i % builders.length]()).sort(() => Math.random() - .5);
   let idx = 0, correct = 0, xp = 0, combo = 0;
   const step = () => {
-    if (idx >= qs.length) return showResult({ title: '練習完成！', correct, total: qs.length, xp, again: '#/challenge', back: '#/home' });
-    const stage = sessionShell(idx / qs.length, null, '#/home');
+    if (idx >= qs.length) return showResult({ title: '練習完成！', correct, total: qs.length, xp, again: '#/challenge', back: '#/discover' });
+    const stage = sessionShell(idx / qs.length, null, '#/discover');
     if (combo >= 3) stage.insertAdjacentHTML('beforebegin', `<div class="tag" style="margin-bottom:10px">連續答對 ${combo} 題</div>`);
     qs[idx](stage, ok => {
       if (ok) { combo++; const g = 5 + Math.min(combo, 5); correct++; xp += g; addXP(g); }
@@ -707,7 +720,7 @@ function viewChallenge() {
 
 // ===== 分頁列：可拖曳的玻璃膠囊（互動同 Stock Tracker）=====
 // 按住整條列 → 膠囊變透鏡、可左右拖，最靠近的分頁亮起；放開時膠囊滑到該分頁並切換。
-const TAB_ALIAS = { study: 'home', lesson: 'home', guide: 'home', kanaquiz: 'kana', book: 'vocab', wordstudy: 'vocab', listen: 'vocab' };
+const TAB_ALIAS = { vocab: 'home', wordstudy: 'home', listen: 'home', book: 'dict', kana: 'discover', kanaquiz: 'discover', grammar: 'discover', challenge: 'discover', study: 'discover', course: 'discover', lesson: 'discover', guide: 'discover' };
 function tabRoute(r) { return TAB_ALIAS[r] || r; }
 function setupTabbar() {
   const bar = $('#nav'); if (!bar) return;

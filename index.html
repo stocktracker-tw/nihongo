@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Nihongo</title>
-  <meta name="description" content="免費、離線可用的日語學習網頁 App：Duolingo 式課程、五十音、N5 單字間隔重複、文法與聽力練習。不情勒、不鎖課。">
+  <meta name="description" content="免費、離線可用的日語學習網頁 App：JLPT N5～N1 單字書（例句、發音、間隔複習）、五十音、文法與隨身聽。">
   <meta name="theme-color" content="#1b1916">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -38,7 +38,7 @@
   </svg>
 
   <header class="brandbar">
-    <a class="brandlogo" href="#/home" aria-label="回課程"><img src="img/kuro.webp" alt=""></a>
+    <a class="brandlogo" href="#/home" aria-label="回首頁"><img src="img/kuro.webp" alt=""></a>
     <span class="brandname">Nihongo<small>日本語を学ぼう</small></span>
     <span class="brandstat" id="miniStats"></span>
   </header>
@@ -46,11 +46,10 @@
   <main id="view"></main>
 
   <nav class="tabbar" id="nav">
-    <a class="tab" href="#/home" data-r="home" aria-label="學習"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 20c0-3 2-4.5 6-4.5s6-1.5 6-4.5-2.5-4.5-6-4.5"/><circle cx="6" cy="20" r="1.4"/><path d="M12 6.5V3l4 1.7-4 1.8"/></svg></span><span class="lb">學習</span></a>
-    <a class="tab" href="#/kana" data-r="kana" aria-label="五十音"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="18.5" text-anchor="middle" font-size="17" fill="currentColor" font-family="Noto Sans JP, sans-serif">あ</text></svg></span><span class="lb">五十音</span></a>
-    <a class="tab" href="#/vocab" data-r="vocab" aria-label="單字"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/></svg></span><span class="lb">單字</span></a>
-    <a class="tab" href="#/grammar" data-r="grammar" aria-label="文法"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h7"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg></span><span class="lb">文法</span></a>
-    <a class="tab" href="#/challenge" data-r="challenge" aria-label="練習"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/></svg></span><span class="lb">練習</span></a>
+    <a class="tab" href="#/home" data-r="home" aria-label="首頁"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-6h-6v6H5.5A1.5 1.5 0 0 1 4 19z"/></svg></span><span class="lb">首頁</span></a>
+    <a class="tab" href="#/dict" data-r="dict" aria-label="詞典"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9 8h6M9 11.5h4"/></svg></span><span class="lb">詞典</span></a>
+    <a class="tab" href="#/discover" data-r="discover" aria-label="發現"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></svg></span><span class="lb">發現</span></a>
+    <a class="tab" href="#/me" data-r="me" aria-label="我的"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20.5c.8-3.9 3.8-6 7.5-6s6.7 2.1 7.5 6"/></svg></span><span class="lb">我的</span></a>
   </nav>
 
   <div class="toast" id="toast"></div>
@@ -58,6 +57,7 @@
   <script src="js/course.js" defer></script>
   <script src="js/lesson.js" defer></script>
   <script src="js/words.js" defer></script>
+  <script src="js/home.js" defer></script>
   <script src="js/app.js" defer></script>
 </body>
 </html>

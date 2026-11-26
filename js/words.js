@@ -96,58 +96,6 @@ function exHTML(w) {
   return `<div class="ex"><div class="row between" style="flex-wrap:nowrap"><div><div class="ja jp">${ja}</div><div class="zh">${esc(w.e[1])}</div></div>${audioBtn(w.e[0])}</div></div>`;
 }
 
-// ===== 單字書首頁 =====
-async function viewBooks() {
-  const b = curBook();
-  view.innerHTML = `<h1>單字書</h1><p class="sub">載入中…</p>`;
-  let words;
-  try { words = await loadBook(b.lv); } catch (e) { return loadFailed(); }
-  if (!stillOn('vocab')) return;
-  const m = state.mastered || {};
-  const learned = words.filter(w => state.srs[w.i] || m[w.i]).length;
-  const mastered = words.filter(w => m[w.i]).length;
-  const plan = planFor(words);
-  const td = wordToday();
-  const done = !plan.due.length && !plan.fresh.length;
-  view.innerHTML = `
-    <h1>單字書</h1>
-    <p class="sub">JLPT N5～N1 共 8,027 字。每天先複習、再背新字，沒記住的字這一輪會一直回來（洗腦循環）。</p>
-    <div class="card book-hero" style="--c:${b.c}">
-      <div class="row between">
-        <div><div class="book-tag">${b.name}</div><div class="unit-title" style="text-shadow:none">${b.name} ${b.desc}單字</div>
-          <div class="muted small">${words.length} 字 · 學過 ${learned} · 已掌握 ${mastered}</div></div>
-        <div class="ring-num"><b>${Math.round(learned / words.length * 100)}</b><small>%</small></div>
-      </div>
-      <div class="bar" style="margin:12px 0 16px"><i style="width:${learned / words.length * 100}%"></i></div>
-      <div class="task">
-        <div><span class="lbl">今日新學</span><b>${td.new}</b><small> / ${dailyNew()}</small></div>
-        <div><span class="lbl">待複習</span><b>${plan.due.length}</b></div>
-        <div><span class="lbl">今日已複習</span><b>${td.rev}</b></div>
-      </div>
-      <div class="row" style="margin-top:16px">
-        ${done ? `<span class="tag" style="padding:8px 14px">今日任務完成 🎉</span><a class="btn" href="#/wordstudy?extra=10">再背 10 個</a>`
-               : `<a class="btn primary big" href="#/wordstudy">開始背單字</a>`}
-        <a class="btn" href="#/book?lv=${b.lv}">${ico('book')} 瀏覽單字</a>
-        <a class="btn" href="#/listen">${ico('speaker')} 隨身聽</a>
-      </div>
-      <div class="row small muted" style="margin-top:14px">每日新詞
-        ${DAILY_CHOICES.map(n => `<button class="chip ${n === dailyNew() ? 'on' : ''}" data-n="${n}">${n}</button>`).join('')}</div>
-    </div>
-    <h2>換一本</h2>
-    <div class="grid books">${BOOKS.map(x => `
-      <button class="card book ${x.lv === b.lv ? 'cur' : ''}" data-lv="${x.lv}" style="--c:${x.c}">
-        <span class="book-tag">${x.name}</span><span class="muted small">${x.desc} · ${BOOK_SIZE[x.lv]} 字</span>
-        <span class="due small" ${bookDue(x.lv) ? '' : 'hidden'}>待複習 ${bookDue(x.lv)}</span>
-        <span class="bar"><i style="width:${bookProgress(x.lv)}%"></i></span></button>`).join('')}</div>
-    <h2>查單字</h2>
-    <input class="answer-input" id="dict" placeholder="輸入漢字、假名、羅馬拼音或中文" style="font-size:16px;text-align:left;margin:0">
-    <div id="dictOut" class="card" style="margin-top:10px;padding:6px 16px;display:none"></div>
-    <p class="small muted" style="margin-top:28px">單字表來源：<a href="https://github.com/jamsinclair/open-anki-jlpt-decks" target="_blank" rel="noopener">open-anki-jlpt-decks</a>（MIT），原始資料 <a href="http://www.tanos.co.uk/jlpt/" target="_blank" rel="noopener">tanos.co.uk</a>（Jonathan Waller，CC BY）。中文釋義為本 App 翻譯。</p>`;
-  $$('[data-n]').forEach(c => c.onclick = () => { state.dailyNew = +c.dataset.n; save(); viewBooks(); });
-  $$('.book[data-lv]').forEach(c => c.onclick = () => { state.book = c.dataset.lv; save(); viewBooks(); });
-  let timer = 0;
-  $('#dict').oninput = e => { clearTimeout(timer); timer = setTimeout(() => dictSearch(e.target.value.trim()), 180); };
-}
 function bookProgress(lv) {
   const words = bookData[lv];
   if (!words) {
@@ -208,16 +156,25 @@ async function viewBook(q) {
   let words;
   try { words = await loadBook(b.lv); } catch (e) { return loadFailed(); }
   if (!stillOn('book')) return;
-  const match = w => { const k = wordState(w.i).k; return filter === 'all' || k === filter || (filter === 'l' && k === 'r'); };
+  const todayIds = new Set(wordToday().ids || []);
+  const hardSet = new Set(hardWords(words).map(w => w.i));
+  const match = w => {
+    if (filter === 'today') return todayIds.has(w.i);
+    if (filter === 'hard') return hardSet.has(w.i);
+    const k = wordState(w.i).k;
+    if (filter === 'learned') return k !== 'n';
+    return filter === 'all' || k === filter || (filter === 'l' && k === 'r');
+  };
+  const special = { today: '今日學習', hard: '我的生詞', learned: '已背記錄' }[filter];
   let list = words.filter(match);
   let shown = 100, selecting = false;
   const sel = new Set();
   const tabs = [['all', '全部'], ['n', '未學'], ['l', '學習中'], ['m', '已掌握']];
   view.innerHTML = `
-    <a href="#/vocab" class="muted" style="text-decoration:none">← 單字書</a>
-    <h1 style="margin-top:8px">${b.name} ${b.desc}單字</h1><p class="sub" id="cnt"></p>
+    <a href="#/${special ? 'home' : 'dict'}" class="muted backlink">‹ ${special ? '首頁' : '詞典'}</a>
+    <h1 style="margin-top:8px">${special ? `${special} · ${b.name}` : `${b.name} ${b.desc}單字`}</h1><p class="sub" id="cnt"></p>
     <div class="row between" style="margin-bottom:12px">
-      <div class="row">${tabs.map(([k, l]) => `<a class="chip ${k === filter ? 'on' : ''}" href="#/book?lv=${b.lv}&f=${k}">${l}</a>`).join('')}</div>
+      <div class="row">${special ? `<span class="small muted">${{ today: '今天背過的字', hard: '答錯過、比較難記的字', learned: '背過或標為已掌握的字' }[filter]}</span>` : tabs.map(([k, l]) => `<a class="chip ${k === filter ? 'on' : ''}" href="#/book?lv=${b.lv}&f=${k}">${l}</a>`).join('')}</div>
       <button class="chip" id="selBtn">選取</button>
     </div>
     <div class="selbar" id="selbar" hidden>
@@ -280,7 +237,7 @@ async function viewWordStudy(q) {
   if (!stillOn('wordstudy')) return;
   const extra = +q.get('extra') || 0;
   const plan = planFor(words, extra);
-  if (!plan.due.length && !plan.fresh.length) { location.hash = '#/vocab'; return; }
+  if (!plan.due.length && !plan.fresh.length) { location.hash = '#/home'; return; }
   const queue = [...shuffle(plan.due).map(w => ({ w, isNew: false })), ...plan.fresh.map(w => ({ w, isNew: true }))];
   const total = queue.length;
   const graded = new Map();   // id → 第一次的結果
@@ -292,6 +249,7 @@ async function viewWordStudy(q) {
     graded.set(item.w.i, g);
     const td = wordToday();
     if (item.isNew) { td.new++; nNew++; } else { td.rev++; nRev++; }
+    logWord(item.isNew);
     td.ids = td.ids || [];
     if (!td.ids.includes(item.w.i)) td.ids.push(item.w.i);
     state.srs[item.w.i] = nextSRS(state.srs[item.w.i], g);
@@ -311,7 +269,7 @@ async function viewWordStudy(q) {
     if (!queue.length) return wrapUp();
     const item = queue[0];
     const w = item.w;
-    const stage = sessionShell(finished / total, null, '#/vocab');
+    const stage = sessionShell(finished / total, null, '#/home');
     const next = done => { keyHandler = null; queue.shift(); if (done) finished++; step(); };
     const tag = item.retry ? '<span class="tag">再看一次</span>' : item.isNew ? '<span class="tag new">新詞</span>' : '<span class="tag">複習</span>';
     stage.innerHTML = `
@@ -378,7 +336,7 @@ async function viewWordStudy(q) {
     let gi = 0;
     const play = () => {
       if (gi >= games.length) return result();
-      const st = sessionShell(1, null, '#/vocab');
+      const st = sessionShell(1, null, '#/home');
       st.insertAdjacentHTML('beforebegin', `<div class="tag" style="margin-bottom:10px">鞏固 ${gi + 1} / ${games.length}</div>`);
       games[gi](st).then(() => { gi++; play(); });
     };
@@ -398,7 +356,7 @@ async function viewWordStudy(q) {
           <div class="stat"><span class="big">${graded.size ? Math.round(right / graded.size * 100) : 0}%</span><span class="lbl">第一次就記住</span></div>
         </div>
         <div class="row" style="justify-content:center">
-          <a class="btn" href="#/vocab">回單字書</a>
+          <a class="btn" href="#/home">回首頁</a>
           <a class="btn" href="#/listen?src=today">${ico('speaker')} 隨身聽複習</a>
           <a class="btn primary" href="#/wordstudy?extra=10">再背 10 個</a>
         </div>
@@ -429,7 +387,7 @@ async function viewListen(q) {
   const names = { today: '今天背過', learning: '學習中', book: '整本書' };
   const list = pools[src];
   view.innerHTML = `
-    <a href="#/vocab" class="muted" style="text-decoration:none">← 單字書</a>
+    <a href="#/home" class="muted backlink">‹ 首頁</a>
     <h1 style="margin-top:8px">隨身聽</h1>
     <p class="sub">${b.name} · 自動播放單字和例句，可以收起手機用聽的。</p>
     <div class="row" style="margin-bottom:14px">${Object.keys(names).map(k => `<a class="chip ${k === src ? 'on' : ''}" href="#/listen?src=${k}">${names[k]}（${pools[k].length}）</a>`).join('')}</div>
