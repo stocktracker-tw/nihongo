@@ -19,7 +19,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 
 // ===== 狀態 =====
 const KEY = 'nihongo-dojo-v1';
-const DEFAULT_SETTINGS = { goal: 50, newPerDay: 10, theme: 'auto', furigana: true, autoplay: true, rate: 0.9 };
+const DEFAULT_SETTINGS = { goal: 50, newPerDay: 10, theme: 'light', furigana: true, autoplay: true, rate: 0.9 };
 let state = load();
 function load() {
   try {
@@ -205,6 +205,7 @@ const routes = { home: viewPath, lesson: viewLesson, guide: viewGuide, kana: vie
 function route() {
   keyHandler = null;
   gentleRetry = false;
+  document.body.classList.remove('in-session');
   if ('speechSynthesis' in window) speechSynthesis.cancel();
   const [name, q] = location.hash.replace(/^#\//, '').split('?');
   const r = routes[name] ? name : 'home';
@@ -383,6 +384,7 @@ function viewKanaQuiz(q) {
 // 練習介面元件
 // =====================================================================
 function sessionShell(progress, hearts, exitHref) {
+  document.body.classList.add('in-session');
   view.innerHTML = `
     <div class="session">
       <div class="session-top">

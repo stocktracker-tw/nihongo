@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>日語道場 Nihongo Dojo</title>
   <meta name="description" content="免費、離線可用的日語學習網頁 App：Duolingo 式課程、五十音、N5 單字間隔重複、文法與聽力練習。不情勒、不鎖課。">
-  <meta name="theme-color" content="#c8423b">
+  <meta name="theme-color" content="#f5f8fb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="日語道場">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon.svg">
@@ -15,20 +19,38 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div class="app">
-    <nav class="nav" id="nav">
-      <div class="brand"><span class="brand-mark">日</span> 日語道場</div>
-      <a href="#/home" data-r="home"><span class="ico">道</span>學習</a>
-      <a href="#/kana" data-r="kana"><span class="ico">あ</span>五十音</a>
-      <a href="#/vocab" data-r="vocab"><span class="ico">語</span>單字</a>
-      <a href="#/grammar" data-r="grammar"><span class="ico">文</span>文法</a>
-      <a href="#/challenge" data-r="challenge"><span class="ico">練</span>練習</a>
-      <a href="#/settings" data-r="settings"><span class="ico">設</span>設定</a>
-      <div class="spacer"></div>
-      <div class="mini-stats" id="miniStats"></div>
-    </nav>
-    <main id="view"></main>
-  </div>
+  <!-- Liquid Glass 折射濾鏡（同 Stock Tracker）：邊緣位移圖 + RGB 色散；不支援的瀏覽器自動退回毛玻璃 -->
+  <svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true">
+    <filter id="lglass" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feImage href="img/glassmap.png" preserveAspectRatio="none" x="0%" y="0%" width="100%" height="100%" result="map"/>
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="30" xChannelSelector="R" yChannelSelector="G" result="dR"/>
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="34" xChannelSelector="R" yChannelSelector="G" result="dG"/>
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="38" xChannelSelector="R" yChannelSelector="G" result="dB"/>
+      <feColorMatrix in="dR" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="cR"/>
+      <feColorMatrix in="dG" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="cG"/>
+      <feColorMatrix in="dB" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="cB"/>
+      <feBlend in="cR" in2="cG" mode="screen" result="rg"/>
+      <feBlend in="rg" in2="cB" mode="screen"/>
+    </filter>
+  </svg>
+
+  <header class="brandbar">
+    <a class="brandlogo" href="#/home" aria-label="回課程"><img src="icon.svg" alt=""></a>
+    <span class="brandname">日語道場<small>Nihongo Dojo</small></span>
+    <span class="brandstat" id="miniStats"></span>
+  </header>
+
+  <main id="view"></main>
+
+  <nav class="tabbar" id="nav">
+    <a class="tab" href="#/home" data-r="home" aria-label="學習"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 20c0-3 2-4.5 6-4.5s6-1.5 6-4.5-2.5-4.5-6-4.5"/><circle cx="6" cy="20" r="1.4"/><path d="M12 6.5V3l4 1.7-4 1.8"/></svg></span><span class="lb">學習</span></a>
+    <a class="tab" href="#/kana" data-r="kana" aria-label="五十音"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="18.5" text-anchor="middle" font-size="17" fill="currentColor" font-family="Noto Sans JP, sans-serif">あ</text></svg></span><span class="lb">五十音</span></a>
+    <a class="tab" href="#/vocab" data-r="vocab" aria-label="單字"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/></svg></span><span class="lb">單字</span></a>
+    <a class="tab" href="#/grammar" data-r="grammar" aria-label="文法"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h7"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg></span><span class="lb">文法</span></a>
+    <a class="tab" href="#/challenge" data-r="challenge" aria-label="練習"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/></svg></span><span class="lb">練習</span></a>
+    <a class="tab" href="#/settings" data-r="settings" aria-label="設定"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg></span><span class="lb">設定</span></a>
+  </nav>
+
   <div class="toast" id="toast"></div>
   <script src="js/data.js"></script>
   <script src="js/course.js"></script>

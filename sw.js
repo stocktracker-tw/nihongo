@@ -1,6 +1,6 @@
 // 離線快取：本地檔案優先用網路取得最新版，失敗時用快取
-const CACHE = 'nihongo-dojo-v3';
-const ASSETS = ['./', 'index.html', 'css/style.css', 'js/data.js', 'js/course.js', 'js/lesson.js', 'js/app.js', 'manifest.json', 'icon.svg', 'img/kuro.webp'];
+const CACHE = 'nihongo-dojo-v4';
+const ASSETS = ['./', 'index.html', 'css/style.css', 'js/data.js', 'js/course.js', 'js/lesson.js', 'js/app.js', 'manifest.json', 'icon.svg', 'img/kuro.webp', 'img/glassmap.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
