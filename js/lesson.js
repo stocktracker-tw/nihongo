@@ -33,9 +33,9 @@ function nextNode() {
 }
 function wordDetail(w) { return `${w.word !== w.reading ? esc(w.word) + '（' + esc(w.reading) + '）' : esc(w.word)}　${esc(w.zh)}`; }
 
-// ===== 吉祥物：クロ（長得兇，但不會兇你）=====
-function mascot(size = 96, mood = 'calm') {
-  return `<img class="mascot ${mood === 'happy' ? 'hop' : ''}" src="img/kuro.webp" width="${size}" height="${size}" alt="吉祥物クロ">`;
+// ===== 吉祥物：クロ（長得兇，但不會兇你）— 只在他說話時出現 =====
+function kuroSay(text) {
+  return `<div class="say"><img class="say-kuro" src="img/kuro.webp" width="40" height="40" alt="クロ"><p class="say-bubble">${text}</p></div>`;
 }
 // =====================================================================
 // 入門課程（列表，從「發現」進入）
@@ -143,9 +143,8 @@ function finishLesson(ui, li, replay, r) {
   keyHandler = null;
   view.innerHTML = `
     <div class="session"><div class="card result fade-in">
-      ${mascot(120, 'happy')}
       <h1>${title}</h1>
-      <p class="muted">${msg}</p>
+      ${kuroSay(msg)}
       <div class="grid grid-4" style="margin:24px 0">
         <div class="stat"><span class="big">${(r.words || r.kana || []).length}</span><span class="lbl">${r.kana && r.kana.length ? '個假名' : '個單字'}</span></div>
         <div class="stat"><span class="big">${Math.round(acc * 100)}%</span><span class="lbl">一次答對</span></div>

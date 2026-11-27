@@ -137,8 +137,8 @@ async function dictSearch(q) {
   out.innerHTML = hit.length ? `<table class="vocab-table"><tbody>${hit.map(wordRow).join('')}</tbody></table>` : '<p class="muted">找不到符合的單字</p>';
 }
 function loadFailed() {
-  view.innerHTML = `<div class="session"><div class="card result">${mascot(100)}<h1>單字資料載入失敗</h1>
-    <p class="muted">可能是沒有網路。連上網路後再試一次，載入過的書之後離線也能用。</p>
+  view.innerHTML = `<div class="session"><div class="card result"><h1>單字資料載入失敗</h1>
+    ${kuroSay('可能是沒有網路。連上網路後再試一次，載入過的書之後離線也能用。')}
     <button class="btn primary" onclick="route()">再試一次</button></div></div>`;
 }
 function wordRow(w, selectable = false, checked = false) {
@@ -347,9 +347,8 @@ async function viewWordStudy(q) {
     const right = [...graded.values()].filter(g => g >= 2).length;
     view.innerHTML = `
       <div class="session"><div class="card result fade-in">
-        ${mascot(110, 'happy')}
         <h1>這一輪背完了！</h1>
-        <p class="muted">${loops ? `洗腦循環 ${loops} 次，沒記住的字都多看了幾遍。` : '全部一次就記住，太強了。'}</p>
+        ${kuroSay(loops ? `洗腦循環 ${loops} 次，沒記住的字都多看了幾遍。` : '全部一次就記住，太強了。')}
         <div class="grid grid-4" style="margin:24px auto">
           <div class="stat"><span class="big">${nNew}</span><span class="lbl">新學</span></div>
           <div class="stat"><span class="big">${nRev}</span><span class="lbl">複習</span></div>

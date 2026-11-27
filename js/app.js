@@ -524,8 +524,8 @@ function showResult({ title, correct, total, again, back }) {
   const acc = total ? Math.round(correct / total * 100) : 0;
   view.innerHTML = `
     <div class="session"><div class="card result fade-in">
-      ${mascot(110, 'happy')}
       <h1>${title}</h1>
+      ${kuroSay(acc === 100 ? '全部答對，漂亮。' : acc >= 80 ? '很穩，答錯的下次再見。' : '有練就有進步，慢慢來。')}
       <div class="grid grid-4" style="margin:24px 0">
         <div class="stat"><span class="big">${acc}%</span><span class="lbl">正確率</span></div>
         <div class="stat"><span class="big">${correct}/${total}</span><span class="lbl">答對</span></div>
@@ -556,7 +556,7 @@ function viewStudy(q) {
   const newLimit = q.get('new') ? S().newPerDay : 0;
   const fresh = VOCAB.filter(v => !state.srs[v.id]).slice(0, newLimit).map(v => v.id);
   if (!due.length && !fresh.length) {
-    view.innerHTML = `<div class="session"><div class="card result">${mascot(110)}<h1>現在沒有要複習的東西</h1><p class="muted">學過的單字會在快忘記的時候回來找你。<br>去學一課新的，或者單純休息也很好。</p><a class="btn primary" href="#/discover">回發現</a></div></div>`;
+    view.innerHTML = `<div class="session"><div class="card result"><h1>現在沒有要複習的東西</h1>${kuroSay('學過的字會在快忘記的時候回來找你。去學一課新的，或單純休息也很好。')}<a class="btn primary" href="#/discover">回發現</a></div></div>`;
     return;
   }
   // 新卡分散插入複習中

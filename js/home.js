@@ -182,7 +182,6 @@ function viewMe(q) {
   const label = d => span === 7 ? '日一二三四五六'[new Date(d).getDay()] : (+d.slice(8)) % 5 === 0 || d === days[span - 1] ? String(+d.slice(8)) : '';
   view.innerHTML = `
     <div class="card me-head">
-      <img class="me-avatar" src="img/kuro.webp" alt="">
       <div class="grow"><div class="plan-title">學習了 ${totalDays()} 天</div>
         <div class="small muted">本週 ${weekDays().filter(d => d.active).length} 天 · 休息不會歸零</div></div>
     </div>
