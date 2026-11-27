@@ -149,7 +149,8 @@ h2 { font-size: 17px; margin: 28px 0 12px; padding-left: 10px; border-left: 3px 
   padding: 10px 20px; border-radius: 999px; font-weight: 600; box-shadow: var(--shadow-sm);
   transition: transform .1s, box-shadow .15s, filter .15s; color: var(--ink);
 }
-a.btn, a.chip, a.icon-btn { text-decoration: none; display: inline-block; color: var(--ink); }
+a.btn, a.chip { text-decoration: none; display: inline-block; color: var(--ink); }
+a.icon-btn { text-decoration: none; color: var(--ink); }  /* 保留 .icon-btn 的 inline-grid，圖示才會置中 */
 .btn:hover { filter: brightness(1.12); box-shadow: 0 6px 18px rgba(0,0,0,.35), inset 0 1px 0 var(--hi); }
 .btn:active { transform: scale(.97); }
 .btn.primary, a.btn.primary {
