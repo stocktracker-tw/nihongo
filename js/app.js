@@ -721,6 +721,13 @@ function tabRoute(r) { return TAB_ALIAS[r] || r; }
 function setupTabbar() {
   const bar = $('#nav'); if (!bar) return;
   const tabs = $$('a.tab', bar);
+  // 可停靠的位置：四個分頁＋最右邊的搜尋鍵（搜尋是動作，不是分頁）
+  const stops = $$('a.tab, .baract', bar);
+  const isAct = i => stops[i] && stops[i].classList.contains('baract');
+  const search = () => {
+    const input = $('#dict');
+    if (input) { input.focus(); input.select(); } else location.hash = '#/dict?focus=1';
+  };
   const cap = document.createElement('span'); cap.className = 'tabcap'; bar.prepend(cap);
   const curIdx = () => {
     const r = location.hash.replace(/^#\//, '').split('?')[0];
@@ -740,15 +747,15 @@ function setupTabbar() {
     const w = g.w + 16; setCap(w, g.h + 8, g.t - 4, g.l + g.w / 2 - w / 2);
   };
   const lens = () => { const g = rest[0]; return { w: g.w + 38, h: g.h + 29, t: g.t - 13 }; };
-  const nearest = x => { let best = 0, bd = 1e9; tabs.forEach((t, k) => { const r = t.getBoundingClientRect(), d = Math.abs(x - (r.left + r.width / 2)); if (d < bd) { bd = d; best = k; } }); return best; };
-  const hl = i => tabs.forEach((t, k) => t.classList.toggle('hl', k === i));
+  const nearest = x => { let best = 0, bd = 1e9; stops.forEach((t, k) => { const r = t.getBoundingClientRect(), d = Math.abs(x - (r.left + r.width / 2)); if (d < bd) { bd = d; best = k; } }); return best; };
+  const hl = i => stops.forEach((t, k) => t.classList.toggle('hl', k === i));
   const grow = i => {
-    const br = bar.getBoundingClientRect(), r = tabs[i].getBoundingClientRect(), z = lens();
+    const br = bar.getBoundingClientRect(), r = stops[i].getBoundingClientRect(), z = lens();
     const L = r.left + r.width / 2 - br.left - z.w / 2; setCap(z.w, z.h, z.t, L); return L;
   };
   const follow = x => {
     const br = bar.getBoundingClientRect(), z = lens();
-    const r1 = tabs[0].getBoundingClientRect(), rN = tabs[tabs.length - 1].getBoundingClientRect();
+    const r1 = stops[0].getBoundingClientRect(), rN = stops[stops.length - 1].getBoundingClientRect();
     const cx = Math.max(r1.left + r1.width / 2 - br.left, Math.min(rN.left + rN.width / 2 - br.left, x - br.left));
     cap.classList.add('drag'); setCap(z.w, z.h, z.t, cx - z.w / 2);
     const o = nearest(x); if (o !== over) { over = o; hl(o); }
@@ -765,10 +772,12 @@ function setupTabbar() {
   const up = () => {
     if (!dragging) return;
     dragging = false;
-    const t = over; hl(t); cap.classList.remove('drag');
-    const before = cap.offsetLeft, L = grow(t);
+    const t = over, act = isAct(t), home = act ? curIdx() : t;
+    hl(home); cap.classList.remove('drag');
+    const before = cap.offsetLeft, L = grow(home);
     settling = true; clearTimeout(timer);
-    timer = setTimeout(() => { settling = false; cap.classList.remove('grab'); bar.classList.remove('press'); place(t, true); }, Math.abs(L - before) > 2 ? 175 : 100);
+    timer = setTimeout(() => { settling = false; cap.classList.remove('grab'); bar.classList.remove('press'); place(curIdx(), true); hl(curIdx()); }, Math.abs(L - before) > 2 ? 175 : 100);
+    if (act) { search(); return; }
     const href = tabs[t].getAttribute('href');
     if (location.hash !== href) setTimeout(() => { location.hash = href; }, 60);
   };
@@ -778,6 +787,7 @@ function setupTabbar() {
   bar.addEventListener('pointercancel', up);
   // 導覽由放開手指決定；鍵盤（Enter）觸發的 click 照常切換
   tabs.forEach(t => t.addEventListener('click', e => { e.preventDefault(); if (e.detail === 0) location.hash = t.getAttribute('href'); }));
+  $$('.baract', bar).forEach(b => b.addEventListener('click', e => { if (e.detail === 0) search(); }));
   addEventListener('resize', () => { rest = null; measure(); place(curIdx(), false); hl(curIdx()); });
   window.__tabSync = anim => {
     if (settling) return;
