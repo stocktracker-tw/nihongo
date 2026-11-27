@@ -256,8 +256,15 @@ function wordDueCount() {
 }
 function renderMini() {
   const el = $('#miniStats');
-  if (el) el.innerHTML = `<span title="累積學習天數">${ico('calendar')}${totalDays()} 天</span><span title="待複習">${ico('cards')}${dueIds().length + wordDueCount()}</span>`;
+  if (el) el.innerHTML = `<span title="累積學習天數">${ico('calendar')}<b>${totalDays()}</b><em>天</em></span>`
+    + `<span title="待複習">${ico('cards')}<b>${dueIds().length + wordDueCount()}</b><em class="lbl">待複習</em></span>`;
 }
+// 頂欄：捲動後才出現霧面底（同 Stock Tracker）
+(() => {
+  const b = document.querySelector('.brandbar'); if (!b) return;
+  const f = () => b.classList.toggle('scrolled', (window.scrollY || 0) > 6);
+  addEventListener('scroll', f, { passive: true }); f();
+})();
 
 // ===== 路由 =====
 const routes = { home: viewHome, vocab: viewHome, dict: viewDict, discover: viewDiscover, me: viewMe, course: viewPath, lesson: viewLesson, guide: viewGuide, kana: viewKana, book: viewBook, wordstudy: viewWordStudy, listen: viewListen, grammar: viewGrammar, challenge: viewChallenge, study: viewStudy, kanaquiz: viewKanaQuiz };

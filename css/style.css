@@ -65,16 +65,30 @@ a { color: var(--accent); }
   box-shadow: inset 0 1px 0.5px rgba(255,244,226,.12), inset 0 0 0 1px rgba(255,244,226,.03);
   background: var(--sheen);
 }
-/* ===== 頂欄與浮動分頁列 ===== */
+/* ===== 頂欄（規格比照 Stock Tracker，不放 App 圖示）=====
+   貼在頂端；往下捲超過 6px 才出現霧面底（.scrolled）。左右留白對齊下面內容。 */
 .brandbar {
-  max-width: 880px; margin: 0 auto; display: flex; align-items: center; gap: 12px;
-  padding: calc(14px + env(safe-area-inset-top, 0px)) 18px 6px;
+  --padx: 18px;
+  position: sticky; top: 0; z-index: 90; display: flex; align-items: center; gap: 10px;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) max(var(--padx), calc((100vw - 880px) / 2 + var(--padx))) 10px;
+  background: transparent; transition: background .25s ease, box-shadow .25s ease;
 }
-.brandname { font-size: 14px; font-weight: 600; letter-spacing: .14em; color: var(--ink-2); text-decoration: none; }
+.brandbar.scrolled {
+  background: rgba(12,11,10,.72); -webkit-backdrop-filter: blur(60px) saturate(1.7); backdrop-filter: blur(60px) saturate(1.7);
+  box-shadow: 0 1px 0 rgba(236,226,208,.06), 0 14px 34px -22px rgba(0,0,0,.8);
+}
+.brandname { font-weight: 800; font-size: 20px; color: var(--ink); letter-spacing: .03em; white-space: nowrap; line-height: 1.7; text-decoration: none; }
+.brandname small { display: block; font-size: 11px; font-weight: 600; color: var(--ink-2); letter-spacing: .16em; margin-top: 1px; line-height: 1.2; }
 .brandstat {
-  margin-left: auto; display: flex; gap: 12px; align-items: center; padding: 7px 14px; border-radius: 999px;
-  font-size: 13px; font-weight: 600; box-shadow: var(--shadow-sm); white-space: nowrap;
+  margin-left: auto; display: inline-flex; align-items: center; gap: 10px; padding: 5px 11px; border-radius: 999px; flex: none;
+  font-size: 12px; font-weight: 700; color: var(--ink); white-space: nowrap;
+  background: rgba(236,226,208,.05) !important; border: 1px solid rgba(236,226,208,.12) !important;
+  box-shadow: inset 0 1px 0 rgba(255,244,226,.1), 0 1px 3px rgba(0,0,0,.3);
 }
+.brandstat b { font-size: 14px; font-weight: 800; letter-spacing: .01em; }
+.brandstat em { font-style: normal; font-weight: 700; font-size: 11.5px; margin-left: 1px; color: var(--ink-2); }
+@media (max-width: 412px) { .brandname { font-size: 17px; } .brandname small { font-size: 10px; letter-spacing: .12em; } }
+@media (max-width: 380px) { .brandstat .lbl { display: none; } }
 /* 浮動玻璃膠囊分頁列（規格比照 Stock Tracker：寬 440、離底 8、圖示 32→33.6、玻璃 blur 16）：
    只顯示圖示；目前分頁下有一顆玻璃膠囊。按住整條列 → 列微微放大、膠囊變成透鏡，
    可以左右拖到想去的分頁，放開就切換。置中不用 transform（iOS 上會讓毛玻璃失效）。 */
@@ -307,7 +321,7 @@ a.icon-btn { text-decoration: none; color: var(--ink); }  /* 保留 .icon-btn �
 .fade-in { animation: fade .22s ease; }
 @keyframes fade { from { opacity: .3; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (max-width: 520px) {
-  .brandstat { gap: 8px; padding: 6px 11px; font-size: 12px; }
+  .brandbar { --padx: 14px; }
   main { padding-left: 14px; padding-right: 14px; }
   .card { padding: 16px; }
 }
@@ -327,7 +341,7 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 /* 圖示 */
 .ico { width: 1.15em; height: 1.15em; display: inline-block; vertical-align: -.2em; flex-shrink: 0; }
 .icon-btn .ico { width: 20px; height: 20px; }
-.brandstat span { display: inline-flex; align-items: center; gap: 5px; }
+.brandstat > span { display: inline-flex; align-items: center; gap: 4px; }
 .brandstat .ico { width: 15px; height: 15px; color: var(--ink-2); }
 .hint { display: flex; gap: 8px; align-items: flex-start; justify-content: center; color: var(--ink-2); margin: 10px 0; }
 .hint .ico { color: var(--ink-2); margin-top: .15em; }
