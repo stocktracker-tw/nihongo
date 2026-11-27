@@ -53,7 +53,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 input, select { font: inherit; color: inherit; }
 a { color: var(--accent); }
 /* ===== 玻璃材質（共用）===== */
-/
 .card, .kana-cell, .choice, .tile, .btn, .chip, .icon-btn, .answer-input, .feedback, .brandstat, .field select, .field input[type=number] {
   background: var(--glass);
   border: 1px solid var(--glass-border);
@@ -69,7 +68,6 @@ a { color: var(--accent); }
   background: var(--sheen);
 }
 /* ===== 頂欄與浮動分頁列 ===== */
-/
 .brandbar {
   max-width: 880px; margin: 0 auto; display: flex; align-items: center; gap: 12px;
   padding: calc(14px + env(safe-area-inset-top, 0px)) 18px 6px;
@@ -85,7 +83,6 @@ a { color: var(--accent); }
 /* 浮動玻璃膠囊分頁列（同 Stock Tracker）：
    只顯示圖示；目前分頁下有一顆玻璃膠囊。按住整條列 → 列微微放大、膠囊變成透鏡，
    可以左右拖到想去的分頁，放開就切換。置中不用 transform（iOS 上會讓毛玻璃失效）。 */
-/
 .tabbar {
   --press: .22s; --ease: cubic-bezier(.32,.72,0,1);
   --bargrp: min(420px, calc(100vw - 36px)); --barbot: calc(10px + env(safe-area-inset-bottom, 0px));
@@ -138,7 +135,6 @@ h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -.01em; }
 h2 { font-size: 17px; margin: 28px 0 12px; padding-left: 10px; border-left: 3px solid var(--amber); }
 .sub { color: var(--ink-2); margin: 0 0 22px; }
 /* ===== 元件 ===== */
-/
 .grid { display: grid; gap: 14px; }
 .grid-2 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .grid-4 { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
@@ -186,7 +182,6 @@ a.btn, a.chip, a.icon-btn { text-decoration: none; display: inline-block; color:
 .unit-title { font-size: 22px; font-weight: 800; text-shadow: 0 1px 2px rgba(0,0,0,.15); }
 .unit-desc { font-size: 14px; opacity: .92; }
 /* ===== 五十音 ===== */
-/
 .kana-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 .kana-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
 .kana-cell {
@@ -211,7 +206,6 @@ a.btn, a.chip, a.icon-btn { text-decoration: none; display: inline-block; color:
 .canvas-wrap .guide { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--jp); font-size: 200px; color: var(--ink); opacity: .1; pointer-events: none; line-height: 1; }
 .canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 /* ===== 練習 ===== */
-/
 .session { max-width: 640px; margin: 0 auto; }
 .session-top { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
 .session-top .bar { flex: 1; height: 14px; }
@@ -325,7 +319,6 @@ a.btn, a.chip, a.icon-btn { text-decoration: none; display: inline-block; color:
 /* =====================================================================
    美化（v2）：圖示、標題層級、首頁數據列、聽力按鈕、細節
    ===================================================================== */
-*/
 ::selection { background: rgba(214,180,131,.35); color: #fff; }
 html { scrollbar-color: rgba(236,226,208,.18) transparent; scrollbar-width: thin; }
 :focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 12px; }
@@ -333,7 +326,6 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 .jp, .prompt-word, .tile, .choice.jp, .kana-cell .k, .example .ja { font-feature-settings: "palt"; }
 .big, .brandstat, .unit-no { font-variant-numeric: tabular-nums; }
 /* 圖示 */
-/
 .ico { width: 1.15em; height: 1.15em; display: inline-block; vertical-align: -.2em; flex-shrink: 0; }
 .icon-btn .ico { width: 20px; height: 20px; }
 .brandstat span { display: inline-flex; align-items: center; gap: 5px; }
@@ -341,14 +333,12 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 .hint { display: flex; gap: 8px; align-items: flex-start; justify-content: center; color: var(--ink-2); margin: 10px 0; }
 .hint .ico { color: var(--amber); margin-top: .15em; }
 /* 標題層級 */
-/
 h1 { font-size: clamp(24px, 4vw, 30px); font-weight: 800; letter-spacing: .01em; }
 .sub { font-size: 15px; max-width: 60ch; }
 .card h2, .result h1 { border-left: 0; padding-left: 0; }
 .card h2 { margin-top: 4px; }
 /* 首頁：問候＋數據列 */
 /* 單元標題列：大號編號浮水印 */
-/
 .unit-banner { overflow: hidden; min-height: 96px; }
 .unit-banner::before {
   content: attr(data-no); position: absolute; right: 150px; bottom: -28px; font-size: 120px; font-weight: 800; line-height: 1;
@@ -360,7 +350,6 @@ h1 { font-size: clamp(24px, 4vw, 30px); font-weight: 800; letter-spacing: .01em;
 .unit-title { font-size: 23px; letter-spacing: .02em; }
 /* 路徑：關卡之間的淡淡連線感 */
 /* 聽力按鈕：圓形播放鍵 */
-/
 .listen {
   display: inline-flex; flex-direction: column; align-items: center; gap: 8px; border: 0; background: none; color: var(--ink-2); font-size: 13px; font-weight: 600;
 }
@@ -373,7 +362,6 @@ h1 { font-size: clamp(24px, 4vw, 30px); font-weight: 800; letter-spacing: .01em;
 .listen:hover .ico { box-shadow: 0 12px 30px rgba(142,113,75,.45), inset 0 1px 0 rgba(255,244,226,.5), 0 0 0 12px rgba(214,180,131,.1); }
 .listen:active .ico { transform: scale(.94); }
 /* 練習畫面 */
-/
 .session-top .bar { height: 10px; background: rgba(0,0,0,.25); }
 .session-top .bar > i { box-shadow: 0 0 12px rgba(156,185,140,.45), inset 0 1px 0 rgba(255,255,255,.35); }
 .prompt-card { padding: 38px 22px 34px; }
@@ -384,7 +372,6 @@ h1 { font-size: clamp(24px, 4vw, 30px); font-weight: 800; letter-spacing: .01em;
 .result .grid-4 { grid-template-columns: repeat(3, 1fr); max-width: 420px; margin-left: auto !important; margin-right: auto !important; }
 .result .stat .lbl { letter-spacing: .04em; }
 /* 清單類頁面 */
-/
 .vocab-table td { padding: 12px 10px; }
 .vocab-table tbody tr { transition: background .15s; }
 .grammar-item { padding: 16px 20px !important; }
@@ -416,7 +403,6 @@ h1 { font-size: clamp(24px, 4vw, 30px); font-weight: 800; letter-spacing: .01em;
 [hidden] { display: none !important; }
 .book .due { color: var(--amber); font-weight: 600; }
 /* ===== 例句、動詞變化、批次、隨身聽 ===== */
-/
 .ex { margin-top: 14px; padding: 12px 14px; border-radius: 16px; background: rgba(0,0,0,.18); border: 1px solid var(--glass-border); text-align: left; }
 .ex .ja { font-size: 17px; line-height: 1.6; }
 .ex .zh { font-size: 14px; color: var(--ink-2); margin-top: 2px; }
@@ -442,13 +428,11 @@ h1 { font-size: clamp(24px, 4vw, 30px); font-weight: 800; letter-spacing: .01em;
 /* =====================================================================
    介面仿「識日」：首頁任務卡、功能格、詞典、我的（深色無印 liquid glass）
    ===================================================================== */
-/
 .grow { flex: 1; min-width: 0; }
 .backlink { text-decoration: none; font-size: 14px; }
 h3.sec { font-size: 15px; font-weight: 700; color: var(--ink); margin: 22px 2px 10px; display: flex; align-items: center; gap: 6px; }
 h3.sec .ico { width: 18px; height: 18px; color: var(--amber); }
 /* 頂部搜尋列 */
-/
 .home-top { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
 .searchpill { flex: 1; display: flex; align-items: center; gap: 8px; padding: 11px 16px; border-radius: 999px; color: var(--ink-2); font-size: 14px; text-align: left;
   background: var(--glass); border: 1px solid var(--glass-border); box-shadow: var(--shadow-sm); min-width: 0; }
@@ -458,7 +442,6 @@ h3.sec .ico { width: 18px; height: 18px; color: var(--amber); }
 .searchbox input { flex: 1; background: none; border: 0; outline: 0; padding: 13px 0; font-size: 16px; color: var(--ink); min-width: 0; }
 .searchbox:focus-within { border-color: color-mix(in srgb, var(--amber) 55%, transparent); }
 /* 任務卡 */
-/
 .plan { padding: 18px 18px 16px; border-radius: 26px; }
 .plan-head { display: flex; align-items: center; gap: 12px; }
 .plan-book { flex: none; width: 44px; height: 52px; border-radius: 8px 12px 12px 8px; display: grid; place-items: center; font-weight: 800; font-size: 15px; color: #fff; letter-spacing: .02em;
@@ -479,7 +462,6 @@ h3.sec .ico { width: 18px; height: 18px; color: var(--amber); }
 .picker { display: grid; gap: 6px; padding: 12px 0 4px; border-top: 1px solid var(--line); margin-top: 4px; margin-bottom: 12px; }
 .picker .row { gap: 8px; }
 /* 兩顆快捷膠囊 */
-/
 .quick { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
 .qpill { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 999px; text-decoration: none; color: var(--ink); font-weight: 600; font-size: 15px;
   background: var(--glass); border: 1px solid var(--glass-border); box-shadow: var(--shadow-sm); }
@@ -487,7 +469,6 @@ h3.sec .ico { width: 18px; height: 18px; color: var(--amber); }
 .qpill span { flex: 1; }
 .chev { width: 16px; height: 16px; color: var(--ink-2); flex: none; }
 /* 功能格 */
-/
 .feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .feat { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 18px 6px 14px; border-radius: 20px; text-decoration: none; color: var(--ink);
   background: var(--glass); border: 1px solid var(--glass-border); box-shadow: var(--shadow-sm); transition: transform .12s, filter .12s; }
@@ -501,7 +482,6 @@ h3.sec .ico { width: 18px; height: 18px; color: var(--amber); }
 .feat-lb { font-size: 13.5px; }
 .feat-badge { position: absolute; top: 8px; right: 10px; min-width: 20px; padding: 0 6px; height: 20px; border-radius: 99px; background: var(--accent-2); color: #fff; font-size: 11.5px; font-weight: 700; display: grid; place-items: center; }
 /* 詞典 */
-/
 .booklist { display: grid; gap: 10px; }
 .bookrow { display: flex; align-items: center; gap: 12px; padding: 12px 16px; text-decoration: none; color: var(--ink); border-radius: 20px; }
 .bookrow .grow { display: block; }
@@ -509,7 +489,6 @@ h3.sec .ico { width: 18px; height: 18px; color: var(--amber); }
 .bookrow.cur { border-color: color-mix(in srgb, var(--c) 70%, transparent); }
 .bookrow .due { color: var(--amber); font-weight: 600; white-space: nowrap; }
 /* 入門課程列表 */
-/
 .unit-card { margin-top: 14px; border-left: 3px solid var(--c); }
 .lessons { display: grid; gap: 2px; }
 .lesson-row { display: flex; align-items: center; gap: 12px; padding: 9px 4px; border-radius: 12px; text-decoration: none; color: var(--ink); }
@@ -522,7 +501,6 @@ h3.sec .ico { width: 18px; height: 18px; color: var(--amber); }
 .lesson-row .grow { display: flex; flex-direction: column; }
 .lwhat { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 我的 */
-/
 .me-head { display: flex; align-items: center; gap: 14px; }
 .me-avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: rgba(0,0,0,.25); border: 1px solid var(--glass-border); }
 .card + .card { margin-top: 14px; }
