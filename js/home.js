@@ -27,7 +27,7 @@ function hardWords(words) {
 async function viewHome() {
   const h = location.hash;
   const b = curBook();
-  view.innerHTML = homeTop() + `<div class="card plan"><p class="muted" style="margin:0">載入中…</p></div>`;
+  view.innerHTML = `<div class="card plan"><p class="muted" style="margin:0">載入中…</p></div>`;
   let words;
   try { words = await loadBook(b.lv); } catch (e) { return loadFailed(); }
   if (!sameView(h)) return;
@@ -38,7 +38,7 @@ async function viewHome() {
   const done = !plan.due.length && !plan.fresh.length;
   const todayN = (td.ids || []).length;
   const hard = hardWords(words).length;
-  view.innerHTML = homeTop() + `
+  view.innerHTML = `
     <div class="card plan" style="--c:${b.c}">
       <div class="plan-head">
         <span class="plan-book">${b.name}</span>
@@ -85,14 +85,8 @@ async function viewHome() {
     bindPicker(p, viewHome);
   };
 }
-function homeTop() {
-  return `<div class="home-top">
-    <button class="searchpill" id="goDict">${ico('search')}<span>查單字：漢字、假名、羅馬拼音、中文</span></button>
-    <a class="icon-btn" href="#/listen" aria-label="隨身聽">${ico('headphones')}</a>
-  </div>`;
-}
+// 首頁按「/」直接查單字（鍵盤用）
 function bindHomeTop() {
-  $('#goDict').onclick = () => { location.hash = '#/dict?focus=1'; };
   keyHandler = e => { if (e.key === '/') { e.preventDefault(); location.hash = '#/dict?focus=1'; } };
 }
 function pickerHTML() {
@@ -128,7 +122,7 @@ function viewDict(q) {
   const input = $('#dict');
   let timer = 0;
   input.oninput = e => { clearTimeout(timer); timer = setTimeout(() => dictSearch(e.target.value.trim()), 180); };
-  if (q.get('focus')) setTimeout(() => input.focus(), 60);
+  if (q.get('focus')) { input.focus({ preventScroll: true }); setTimeout(() => input.focus({ preventScroll: true }), 60); }
 }
 
 // =====================================================================
@@ -153,7 +147,7 @@ function viewDiscover() {
     <h3 class="sec">文法</h3>
     <div class="feats">
       ${feat('#/grammar', 'list', '文法 25 條')}
-      ${feat('#/dict?focus=1', 'search', '查單字')}
+      ${feat('#/book?f=hard', 'heart', '我的生詞')}
       ${feat('#/me', 'chart', '學習數據')}
     </div>
     <p class="small muted" style="margin-top:22px">${kanaDone ? `五十音已練過 ${kanaDone} 個。` : ''}這裡沒有連續天數、沒有愛心、不鎖內容，想學就學。</p>`;

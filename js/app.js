@@ -256,8 +256,7 @@ function wordDueCount() {
 }
 function renderMini() {
   const el = $('#miniStats');
-  if (el) el.innerHTML = `<span title="累積學習天數">${ico('calendar')}<b>${totalDays()}</b><em>天</em></span>`
-    + `<span title="待複習">${ico('cards')}<b>${dueIds().length + wordDueCount()}</b><em class="lbl">待複習</em></span>`;
+  if (el) el.innerHTML = `<span title="累積學習天數">${ico('calendar')}<b>${totalDays()}</b><em>天</em></span>`;
 }
 // 頂欄：捲動後才出現霧面底（同 Stock Tracker）
 (() => {
@@ -733,7 +732,9 @@ function setupTabbar() {
   const isAct = i => stops[i] && stops[i].classList.contains('baract');
   const search = () => {
     const input = $('#dict');
-    if (input) { input.focus(); input.select(); } else location.hash = '#/dict?focus=1';
+    if (input) { input.focus(); input.select(); return; }
+    const kb = $('#kbProxy'); if (kb) kb.focus({ preventScroll: true });  // 先在點擊當下開鍵盤
+    location.hash = '#/dict?focus=1';
   };
   const cap = document.createElement('span'); cap.className = 'tabcap'; bar.prepend(cap);
   const curIdx = () => {
