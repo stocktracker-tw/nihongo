@@ -106,16 +106,16 @@ a { color: var(--accent); }
 }
 .tabbar .tabcap.drag { transition: left 0s, top var(--press) var(--ease), width var(--press) var(--ease), height var(--press) var(--ease); }
 .tabbar .tabcap::before, .tabbar .tabcap::after { content: ""; position: absolute; inset: 0; border-radius: inherit; transition: opacity var(--press) var(--ease); }
-/* 靜止：霧面膠囊 */
+/* 靜止：霧面膠囊（比照 Stock Tracker：頂緣鏡面高光、白色細邊、底部陰影；換成深色底的亮度） */
 .tabbar .tabcap::before { opacity: 1;
-  background: linear-gradient(rgba(255,244,226,.18), rgba(255,244,226,.05)), rgba(120,104,84,.22);
-  box-shadow: inset 0 1.5px 0 rgba(255,244,226,.3), inset 0 0 0 1px rgba(255,244,226,.1), inset 0 -1px 2px -1px rgba(0,0,0,.4), 0 2px 8px -3px rgba(0,0,0,.6); }
-/* 按住：透鏡（中心透明、邊緣色散） */
+  background: linear-gradient(180deg, rgba(255,246,232,.28), rgba(255,246,232,.08)), rgba(150,134,112,.34);
+  box-shadow: inset 0 1.5px 0 rgba(255,246,232,.6), inset 0 0 0 1px rgba(255,246,232,.22), inset 0 -1px 2px -1px rgba(0,0,0,.45), 0 2px 8px -3px rgba(0,0,0,.6); }
+/* 按住：透鏡（中心透明、邊緣色散）— 與 Stock Tracker 相同 */
 .tabbar .tabcap::after { opacity: 0;
-  background: radial-gradient(closest-side, rgba(255,244,226,0) 58%, rgba(214,180,131,.06) 84%, rgba(214,180,131,.16) 100%);
-  box-shadow: inset 0 0 0 1px rgba(255,244,226,.4), inset 0 2px 2.5px -1px rgba(46,190,225,.55), inset 2px 0 2.5px -1px rgba(228,163,32,.5),
-    inset -2px 0 2.5px -1px rgba(228,163,32,.5), inset 0 -2px 2.5px -1px rgba(104,92,214,.52), inset 0 1.5px 1px rgba(255,244,226,.35),
-    inset 0 -1px 2px -1px rgba(110,90,60,.28), 0 4px 14px -5px rgba(0,0,0,.35); }
+  background: radial-gradient(closest-side, rgba(255,255,255,0) 58%, rgba(214,190,150,.10) 84%, rgba(214,190,150,.24) 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.9), inset 0 2px 2.5px -1px rgba(46,190,225,.55), inset 2px 0 2.5px -1px rgba(228,163,32,.5),
+    inset -2px 0 2.5px -1px rgba(228,163,32,.5), inset 0 -2px 2.5px -1px rgba(104,92,214,.52), inset 0 1.5px 1px rgba(255,255,255,.75),
+    inset 0 -1px 2px -1px rgba(0,0,0,.35), 0 4px 14px -5px rgba(0,0,0,.5); }
 .tabbar .tabcap.grab::before { opacity: 0; }
 .tabbar .tabcap.grab::after { opacity: 1; }
 body.in-session .tabbar, body.in-session .brandbar { display: none; }
