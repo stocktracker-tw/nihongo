@@ -11,11 +11,11 @@
 // =====================================================================
 
 const BOOKS = [
-  { lv: 'n5', name: 'N5', desc: '入門', c: '#6f8f60' },
-  { lv: 'n4', name: 'N4', desc: '初級', c: '#9a8562' },
-  { lv: 'n3', name: 'N3', desc: '中級', c: '#5f7480' },
-  { lv: 'n2', name: 'N2', desc: '中高級', c: '#94705a' },
-  { lv: 'n1', name: 'N1', desc: '高級', c: '#8f1a2c' },
+  { lv: 'n5', name: 'N5', desc: '入門', c: '#3a3733' },
+  { lv: 'n4', name: 'N4', desc: '初級', c: '#3a3733' },
+  { lv: 'n3', name: 'N3', desc: '中級', c: '#3a3733' },
+  { lv: 'n2', name: 'N2', desc: '中高級', c: '#3a3733' },
+  { lv: 'n1', name: 'N1', desc: '高級', c: '#3a3733' },
 ];
 const BOOK_SIZE = { n5: 717, n4: 667, n3: 2139, n2: 1806, n1: 2698 };
 const DAILY_CHOICES = [5, 10, 20, 30];

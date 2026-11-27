@@ -6,7 +6,7 @@
 // =====================================================================
 
 const COURSE_WORDS = [];
-const UNIT_COLORS = ['#9a8562', '#6f8f60', '#8f1a2c', '#a8865a', '#5f7480', '#94705a', '#737f5c', '#a07f50', '#5a6a76', '#80708a', '#a5664c'];
+const UNIT_COLORS = ['#3a3733'];  // 單色：不用每個單元一個顏色
 
 function cw(u, k) { const [w, zh, e] = u.words[k]; return { key: k, word: w, reading: k, zh, emoji: e, id: courseItemId(k) }; }
 function courseItemId(k) {
