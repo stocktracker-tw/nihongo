@@ -1,6 +1,6 @@
 // 離線快取（stale-while-revalidate）：
 // 先用快取立刻顯示，同時在背景抓新版存起來，下次開啟就是最新版。
-const CACHE = 'nihongo-v18';
+const CACHE = 'nihongo-v19';
 const ASSETS = ['./', 'index.html', 'css/style.css', 'js/data.js', 'js/course.js', 'js/lesson.js', 'js/words.js', 'js/home.js', 'data/jlpt/index.json', 'js/app.js', 'manifest.json',
   'img/favicon-64.png', 'img/icon-192.png', 'img/apple-touch-icon.png', 'img/kuro.webp', 'img/glassmap.png', 'audio/index.json'];
 // 發音 mp3 不預先下載，播放過一次就會存進快取，之後離線也能播
