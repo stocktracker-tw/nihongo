@@ -65,7 +65,7 @@ a { color: var(--accent); }
   box-shadow: inset 0 1px 0.5px rgba(255,244,226,.12), inset 0 0 0 1px rgba(255,244,226,.03);
   background: var(--sheen);
 }
-/* ===== 頂欄（規格比照 Stock Tracker，不放 App 圖示）=====
+/* ===== 頂欄（規格比照 Stock Tracker：38px 圓角圖示＋名稱＋小字）=====
    貼在頂端；往下捲超過 6px 才出現霧面底（.scrolled）。左右留白對齊下面內容。 */
 .brandbar {
   --padx: 18px;
@@ -77,6 +77,11 @@ a { color: var(--accent); }
   background: rgba(12,11,10,.72); -webkit-backdrop-filter: blur(60px) saturate(1.7); backdrop-filter: blur(60px) saturate(1.7);
   box-shadow: 0 1px 0 rgba(236,226,208,.06), 0 14px 34px -22px rgba(0,0,0,.8);
 }
+.brandlogo { position: relative; display: inline-block; width: 38px; height: 38px; border-radius: 11px; overflow: hidden; flex: 0 0 auto; box-shadow: 0 5px 14px -5px rgba(0,0,0,.7); }
+.brandlogo img { width: 100%; height: 100%; display: block; }
+.brandlogo i { position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.5), inset 0 -1px 1px rgba(255,255,255,.2), inset 0 0 0 1px rgba(255,255,255,.14);
+  background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0) 30%, rgba(255,255,255,0) 78%, rgba(255,255,255,.08)); }
 .brandname { font-weight: 800; font-size: 20px; color: var(--ink); letter-spacing: .03em; white-space: nowrap; line-height: 1.7; text-decoration: none; }
 .brandname small { display: block; font-size: 11px; font-weight: 600; color: var(--ink-2); letter-spacing: .16em; margin-top: 1px; line-height: 1.2; }
 .brandstat {
