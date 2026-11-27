@@ -161,7 +161,7 @@ a.btn, a.chip, a.icon-btn { text-decoration: none; display: inline-block; color:
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 .icon-btn { width: 42px; height: 42px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 17px; box-shadow: var(--shadow-sm); }
 .chip { padding: 6px 15px; border-radius: 999px; font-size: 14px; box-shadow: var(--shadow-sm); }
-.chip.on { background: linear-gradient(180deg, #9b2338, #7f0019); color: #fff; border-color: transparent; font-weight: 600; }
+.chip.on { background: linear-gradient(180deg, #92213a, #7f0019); color: #fff; border-color: transparent; font-weight: 600; box-shadow: 0 1px 0 rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.14); }
 .stat { display: flex; flex-direction: column; gap: 2px; }
 .stat .lbl { font-size: 13px; color: var(--ink-2); }
 .bar { height: 8px; background: rgba(150,135,110,.16); border-radius: 99px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,.12); }
@@ -425,7 +425,7 @@ h1 { font-size: clamp(24px, 4vw, 30px); font-weight: 800; letter-spacing: .01em;
 .vocab-table td.pick input { accent-color: var(--accent); width: 18px; height: 18px; pointer-events: none; }
 .player .prompt-word { font-size: clamp(40px, 10vw, 60px); }
 .big-ctl { width: 56px; height: 56px; font-size: 20px; }
-.big-ctl.play { width: 72px; height: 72px; font-size: 24px; color: #fff; background: linear-gradient(180deg, #9b2338, #7f0019); border-color: transparent; box-shadow: 0 8px 22px rgba(127,0,25,.35), inset 0 1px 0 rgba(255,255,255,.35); }
+.big-ctl.play { width: 72px; height: 72px; font-size: 24px; color: #fff; background: linear-gradient(180deg, #92213a, #7f0019); border-color: transparent; box-shadow: 0 1px 0 rgba(0,0,0,.3), 0 10px 22px -10px rgba(127,0,25,.8), inset 0 1px 0 rgba(255,255,255,.14); }
 /* =====================================================================
    介面仿「識日」：首頁任務卡、功能格、詞典、我的（深色無印 liquid glass）
    ===================================================================== */
