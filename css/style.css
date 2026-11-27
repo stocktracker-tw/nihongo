@@ -413,6 +413,11 @@ h1 { font-size: clamp(24px, 4vw, 30px); font-weight: 800; letter-spacing: .01em;
 .word-card-big { padding-top: 46px; min-height: 260px; display: flex; flex-direction: column; justify-content: center; }
 .word-card-big .prompt-word { font-size: clamp(44px, 10vw, 68px); }
 .judge { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+/* 背單字：四選一（2×2） */
+.choices4 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.choices4 .choice { position: relative; min-height: 64px; padding: 12px 14px; font-size: 16.5px; text-align: center; line-height: 1.4; }
+.choices4 .choice .kbd { position: absolute; top: 7px; left: 10px; right: auto; margin: 0; }
+#after { margin-top: 12px; }
 .judge:has(> :nth-child(2):last-child) { grid-template-columns: 1fr 1fr; }
 .judge .btn { padding: 16px 8px; font-size: 17px; border-radius: 20px; }
 .j-yes { border-color: color-mix(in srgb, var(--good) 55%, transparent) !important; color: var(--good) !important; }

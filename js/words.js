@@ -3,8 +3,9 @@
 // 單字書（學習模式仿「識日」）
 //  ・N5～N1 單字書，選一本當作目前在背的書
 //  ・每日任務：先複習到期的字，再學新字（艾賓浩斯式間隔，沿用 SM-2）
-//  ・每張卡先自己回想：認識／模糊／不認識 → 看答案（認識的要再確認記對了沒）
-//  ・洗腦循環：沒答對的字在這一輪會一直回來，直到你說「認識」
+//  ・每張卡是四選一：看日文，從四個中文意思選一個 → 立刻看答案、讀音、例句
+//    （錯的選項盡量挑同一類的字：動詞配動詞、い形容詞配形容詞，避免一眼刪去）
+//  ・洗腦循環：答錯的字在這一輪會一直回來，直到選對
 //  ・已掌握：已經會的字直接標記，以後不再出現
 //  ・收尾：連連看＋聽寫，鞏固今天這一輪的字
 // 本檔只宣告函式，由 app.js 載入後使用。
@@ -229,6 +230,23 @@ async function viewBook(q) {
 }
 
 // ===== 背單字 =====
+// 字的大類：動詞／い形容詞／其他（挑錯誤選項時用，讓四個選項看起來同一類）
+function wordKind(w) { return w.v ? 'v' : w.w.length >= 2 && /い$/.test(w.w) ? 'a' : 'n'; }
+// 四選一的選項：正解＋三個意思不重疊的錯誤選項，打亂順序
+function meaningChoices(w, words) {
+  const parts = m => m.split(/[、，,;；／/]/).map(x => x.trim()).filter(Boolean);
+  const mine = new Set(parts(w.m));
+  const ok = x => x.i !== w.i && x.m && x.m !== w.m && !parts(x.m).some(p => mine.has(p));
+  const kind = wordKind(w);
+  const pick = [], used = new Set([w.m]);
+  for (const pool of [shuffle(words.filter(x => wordKind(x) === kind)), shuffle(words.slice())]) {
+    for (const x of pool) {
+      if (pick.length >= 3) break;
+      if (ok(x) && !used.has(x.m)) { pick.push(x.m); used.add(x.m); }
+    }
+  }
+  return shuffle([w.m, ...pick]);
+}
 async function viewWordStudy(q) {
   const b = curBook();
   view.innerHTML = `<p class="muted">載入中…</p>`;
@@ -285,37 +303,31 @@ async function viewWordStudy(q) {
         </div>
         <div style="margin-top:12px">${audioBtn(w.s)}</div>
       </div>
-      <div class="judge" id="judge">
-        <button class="btn j-yes" data-a="yes">認識<span class="kbd">1</span></button>
-        <button class="btn j-maybe" data-a="maybe">模糊<span class="kbd">2</span></button>
-        <button class="btn j-no" data-a="no">不認識<span class="kbd">3</span></button>
-      </div>
-      <div class="judge" id="after" hidden></div>
-      <div style="text-align:center;margin-top:12px"><button class="linkbtn" id="master">${ico('star')} 已掌握，以後不用再背</button></div>`;
+      <div class="choices4" id="opts">${meaningChoices(w, words).map((m, k) =>
+        `<button class="choice" data-m="${esc(m)}"><span class="kbd">${k + 1}</span>${esc(m)}</button>`).join('')}</div>
+      <div id="after" hidden><button class="btn primary block" id="go">下一個<span class="kbd">Enter</span></button></div>
+      <div class="row" style="justify-content:center;gap:18px;margin-top:12px">
+        <button class="linkbtn" id="dunno">不知道，看答案</button>
+        <button class="linkbtn" id="master">${ico('star')} 已掌握</button>
+      </div>`;
     if (S().autoplay) speak(w.s);
-    const reveal = a => {
-      $('#ans').hidden = false; $('#judge').hidden = true;
-      const after = $('#after'); after.hidden = false;
-      if (a === 'yes') {
-        after.innerHTML = `<button class="btn j-no" data-b="wrong">記錯了<span class="kbd">2</span></button><button class="btn primary" data-b="right">記對了<span class="kbd">1</span></button>`;
-      } else {
-        after.innerHTML = `<button class="btn primary" data-b="next" style="grid-column:1/-1">記住了，下一個<span class="kbd">Enter</span></button>`;
-      }
-      if (S().autoplay) speak(w.s);
-      const finish = b2 => {
-        if (b2 === 'right') { grade(item, item.isNew && !item.retry ? 3 : 2); next(true); return; }
-        if (a === 'maybe') grade(item, 1); else grade(item, 0);
-        again(item); next(false);
-      };
-      $$('#after [data-b]').forEach(x => x.onclick = () => finish(x.dataset.b));
-      keyHandler = e => {
-        if (a === 'yes') { if (e.key === '1' || e.key === 'Enter') finish('right'); if (e.key === '2') finish('wrong'); }
-        else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); finish('next'); }
-      };
+    const opts = $$('#opts .choice');
+    const pickIt = btn => {
+      const ok = !!btn && btn.dataset.m === w.m;
+      opts.forEach(o => { o.disabled = true; if (o.dataset.m === w.m) o.classList.add('correct'); });
+      if (btn && !ok) btn.classList.add('wrong');
+      $('#ans').hidden = false; $('#after').hidden = false; $('#dunno').hidden = true;
+      if (ok) grade(item, item.isNew && !item.retry ? 3 : 2); else { grade(item, 0); again(item); }
+      if (S().autoplay && !ok) speak(w.s);
+      const go = () => next(ok);
+      $('#go').onclick = go;
+      keyHandler = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
+      $('#go').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     };
-    $$('#judge [data-a]').forEach(x => x.onclick = () => reveal(x.dataset.a));
+    opts.forEach(o => o.onclick = () => pickIt(o));
+    $('#dunno').onclick = () => pickIt(null);
     $('#master').onclick = () => { masterIt(item); next(true); };
-    keyHandler = e => { const k = { 1: 'yes', 2: 'maybe', 3: 'no' }[e.key]; if (k) reveal(k); };
+    keyHandler = e => { const o = opts[+e.key - 1]; if (o && !o.disabled) pickIt(o); };
   };
 
   // 收尾：連連看 → 聽寫
